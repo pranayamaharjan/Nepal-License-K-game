@@ -1,0 +1,6 @@
+{
+  "name": "Nepal DoTM Category K Scooter Trial 3D",
+  "description": "Playable 3D browser simulation of the Nepal Department of Transport Management (DoTM) Category K (Scooter) Practical Driving License Trial with authentic two-wheel physics and exact 100-point scoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

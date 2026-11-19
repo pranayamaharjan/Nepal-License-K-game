@@ -1,0 +1,2849 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nepal DoTM Category K Scooter Trial 3D</title>
+    <meta
+      name="description"
+      content="Playable 3D browser simulation of the Nepal Department of Transport Management (DoTM) Category K (Scooter) Practical Driving License Trial with authentic two-wheel physics and exact 100-point scoring."
+    />
+    <meta property="og:title" content="Nepal DoTM Category K Scooter Trial 3D" />
+    <meta
+      property="og:description"
+      content="Playable 3D browser simulation of the Nepal DoTM Category K (Scooter) Practical Driving License Trial."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg-panel: rgba(15, 23, 42, 0.88);
+        --bg-panel-solid: #0f172a;
+        --border-subtle: rgba(255, 255, 255, 0.14);
+        --text-primary: #f8fafc;
+        --text-muted: #94a3b8;
+        --accent-amber: #f59e0b;
+        --accent-green: #10b981;
+        --accent-red: #ef4444;
+        --accent-cyan: #06b6d4;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #87b5d6;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        color: var(--text-primary);
+        user-select: none;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #canvas-container {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      /* Top-Left Score & Station HUD */
+      .hud-top-left {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 10;
+        background: var(--bg-panel);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        pointer-events: auto;
+      }
+
+      .score-block {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .hud-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.04em;
+      }
+
+      .score-value {
+        font-family: 'Chakra Petch', sans-serif;
+        font-variant-numeric: tabular-nums;
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--text-primary);
+      }
+
+      .score-value.pass {
+        color: var(--accent-green);
+      }
+
+      .score-value.warn {
+        color: var(--accent-amber);
+      }
+
+      .score-value.fail {
+        color: var(--accent-red);
+      }
+
+      .hud-divider {
+        width: 1px;
+        height: 36px;
+        background: var(--border-subtle);
+      }
+
+      .station-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .station-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        white-space: nowrap;
+      }
+
+      .station-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Top-Center Examiner Toast */
+      .examiner-feed {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 12;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+        max-width: min(520px, 90vw);
+      }
+
+      .examiner-toast {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+        animation: toastIn 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .examiner-toast.good {
+        border-color: rgba(16, 185, 129, 0.55);
+        color: #a7f3d0;
+      }
+
+      .examiner-toast.warn {
+        border-color: rgba(245, 158, 11, 0.65);
+        color: #fde68a;
+      }
+
+      .examiner-toast.fail {
+        border-color: rgba(239, 68, 68, 0.75);
+        color: #fecaca;
+      }
+
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Ukalo Hold Banner */
+      .ukalo-banner {
+        position: fixed;
+        top: 84px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 11;
+        background: rgba(15, 23, 42, 0.92);
+        border: 1px solid var(--accent-amber);
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-family: 'Chakra Petch', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: #fde68a;
+        display: none;
+        pointer-events: none;
+        text-align: center;
+      }
+
+      .ukalo-banner.go {
+        border-color: var(--accent-green);
+        color: #6ee7b7;
+      }
+
+      /* Collapsible Bottom Dock */
+      .dock-wrapper {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: min(960px, 95vw);
+        transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .dock-wrapper.collapsed {
+        transform: translate(-50%, calc(100% - 26px));
+      }
+
+      .dock-toggle {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-subtle);
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        padding: 4px 14px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .dock-toggle:hover {
+        color: var(--text-primary);
+      }
+
+      .bottom-dock {
+        width: 100%;
+        background: var(--bg-panel);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .dock-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .speed-box {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        min-width: 82px;
+      }
+
+      .speed-num {
+        font-family: 'Chakra Petch', sans-serif;
+        font-variant-numeric: tabular-nums;
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .speed-unit {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Balance & Slope Meter */
+      .meter-col {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 116px;
+      }
+
+      .meter-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .balance-track {
+        position: relative;
+        width: 116px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.14);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .balance-center {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: rgba(255, 255, 255, 0.4);
+        transform: translateX(-50%);
+      }
+
+      .balance-marker {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 12px;
+        background: var(--accent-cyan);
+        border-radius: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* Blinkers */
+      .blinker-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .blinker-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .blinker-btn.active {
+        background: rgba(245, 158, 11, 0.22);
+        border-color: var(--accent-amber);
+        color: #fbbf24;
+      }
+
+      /* Checklist items */
+      .checklist-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .check-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        white-space: nowrap;
+        font-family: inherit;
+      }
+
+      .check-btn.done {
+        background: rgba(16, 185, 129, 0.18);
+        border-color: rgba(16, 185, 129, 0.6);
+        color: #6ee7b7;
+      }
+
+      .action-btn {
+        background: rgba(255, 255, 255, 0.09);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        cursor: pointer;
+        white-space: nowrap;
+        font-family: inherit;
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .action-btn.primary {
+        background: var(--accent-amber);
+        border-color: var(--accent-amber);
+        color: #0f172a;
+      }
+
+      .controls-hint {
+        width: 100%;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 7px;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 11.5px;
+        color: var(--text-muted);
+      }
+
+      .controls-hint kbd {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10.5px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 4px;
+        padding: 1px 5px;
+        color: var(--text-primary);
+      }
+
+      /* End-of-Trial Scorecard Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background: rgba(2, 6, 23, 0.72);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal-backdrop.open {
+        display: flex;
+      }
+
+      .scorecard {
+        width: min(560px, 96vw);
+        max-height: 90vh;
+        overflow-y: auto;
+        background: var(--bg-panel-solid);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      }
+
+      .scorecard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 18px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .verdict-title {
+        font-family: 'Chakra Petch', sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .verdict-title.pass {
+        color: var(--accent-green);
+      }
+
+      .verdict-title.fail {
+        color: var(--accent-red);
+      }
+
+      .verdict-sub {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .final-score-big {
+        font-family: 'Chakra Petch', sans-serif;
+        font-variant-numeric: tabular-nums;
+        font-size: 36px;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      .station-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+
+      .station-table th,
+      .station-table td {
+        padding: 8px 6px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: left;
+      }
+
+      .station-table th {
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 11.5px;
+      }
+
+      .station-table td.num {
+        text-align: right;
+        font-family: 'JetBrains Mono', monospace;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .log-list {
+        max-height: 140px;
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 18px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .restart-cta {
+        width: 100%;
+        background: var(--accent-amber);
+        color: #0f172a;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .restart-cta:hover {
+        background: #fbbf24;
+      }
+
+      /* Subtle Helmet Visor Vignette for First-Person POV */
+      .visor-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+        display: none;
+        box-shadow: inset 0 0 90px 28px rgba(2, 6, 23, 0.72);
+        border-top: 18px solid rgba(15, 23, 42, 0.85);
+        border-bottom: 10px solid rgba(15, 23, 42, 0.65);
+      }
+
+      .visor-overlay.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container"></div>
+    <div id="visor-overlay" class="visor-overlay"></div>
+
+    <!-- Top-Left Score & Station -->
+    <div class="hud-top-left" aria-live="polite">
+      <div class="score-block">
+        <span class="hud-label">DoTM Score (Pass 70)</span>
+        <span id="hud-score" class="score-value pass">100/100</span>
+      </div>
+      <div class="hud-divider"></div>
+      <div class="station-block">
+        <span id="hud-station" class="station-title">1. Start Zone</span>
+        <span id="hud-station-sub" class="station-meta">Pre-Ride: Press 1, 2, 3 before moving</span>
+      </div>
+    </div>
+
+    <!-- Top-Center Examiner Notifications -->
+    <div id="examiner-feed" class="examiner-feed" aria-live="assertive"></div>
+
+    <!-- Ukalo Ramp Stop Banner -->
+    <div id="ukalo-banner" class="ukalo-banner">HOLD BRAKE ON RAMP: 2.0s</div>
+
+    <!-- Collapsible Bottom Dock -->
+    <div id="dock-wrapper" class="dock-wrapper">
+      <button id="dock-toggle" class="dock-toggle" type="button">Hide HUD</button>
+      <div class="bottom-dock">
+        <div class="dock-section">
+          <div class="speed-box">
+            <span id="hud-speed" class="speed-num">0</span>
+            <span class="speed-unit">km/h</span>
+          </div>
+
+          <div class="meter-col">
+            <div class="meter-row">
+              <span>Balance</span>
+              <span id="hud-slope">Slope 0°</span>
+            </div>
+            <div class="balance-track">
+              <div class="balance-center"></div>
+              <div id="balance-marker" class="balance-marker"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dock-section blinker-group">
+          <button id="btn-blink-l" class="blinker-btn" type="button" title="Left Blinker (Q)">Q ◀</button>
+          <button id="btn-blink-r" class="blinker-btn" type="button" title="Right Blinker (E)">▶ E</button>
+        </div>
+
+        <div class="dock-section checklist-group">
+          <button id="chk-1" class="check-btn" type="button">1 Helmet</button>
+          <button id="chk-2" class="check-btn" type="button">2 Mirrors</button>
+          <button id="chk-3" class="check-btn" type="button">3 Stand</button>
+        </div>
+
+        <div class="dock-section">
+          <button id="btn-mode" class="action-btn" type="button" title="Switch Simulator Mode">Mode: Full Trial</button>
+          <button id="btn-weather" class="action-btn" type="button" title="Switch Weather / Lighting">Weather: Sunny</button>
+          <button id="btn-scooter" class="action-btn" type="button" title="Switch Scooter Model">Scooter: Dio 110</button>
+          <button id="btn-tips" class="action-btn" type="button" title="Real-World DoTM Driver Tips (T)">Driver Tips (T)</button>
+          <button id="btn-cam" class="action-btn" type="button">Cam: Chase (C)</button>
+          <button id="btn-markers" class="action-btn" type="button">Sightlines: On</button>
+          <button id="btn-audio" class="action-btn" type="button">Audio: On</button>
+          <button id="btn-restart" class="action-btn primary" type="button">Restart (R)</button>
+        </div>
+
+        <div class="controls-hint">
+          <span><kbd>W</kbd>/<kbd>↑</kbd> Throttle</span>
+          <span><kbd>S</kbd>/<kbd>↓</kbd> Rear Brake</span>
+          <span><kbd>Space</kbd> Front Brake (Caution)</span>
+          <span><kbd>A</kbd>/<kbd>D</kbd> Steer</span>
+          <span><kbd>Q</kbd>/<kbd>E</kbd> Blinkers</span>
+          <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Checklist</span>
+          <span><kbd>C</kbd> Camera</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- End-of-Trial Scorecard Modal -->
+    <div id="scorecard-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="verdict-title">
+      <div class="scorecard">
+        <div class="scorecard-header">
+          <div>
+            <div id="verdict-title" class="verdict-title pass">TRIAL PASSED</div>
+            <div id="verdict-sub" class="verdict-sub">Nepal DoTM Category K (Scooter) Practical Examination</div>
+          </div>
+          <div id="final-score-big" class="final-score-big">100/100</div>
+        </div>
+
+        <table class="station-table">
+          <thead>
+            <tr>
+              <th>Station</th>
+              <th>Status</th>
+              <th class="num">Points</th>
+            </tr>
+          </thead>
+          <tbody id="scorecard-rows"></tbody>
+        </table>
+
+        <div id="scorecard-logs" class="log-list"></div>
+
+        <button id="modal-restart-btn" class="restart-cta" type="button">Restart Trial</button>
+      </div>
+    </div>
+
+    <!-- Real-World Nepal DoTM Driver Tips Modal -->
+    <div id="tips-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tips-title">
+      <div class="scorecard">
+        <div class="scorecard-header">
+          <div>
+            <div id="tips-title" class="verdict-title pass" style="font-size: 22px; color: #f8fafc;">Real-World Nepal DoTM Scooter Tips</div>
+            <div class="verdict-sub">Practical advice for passing Category K at Ekantakuna, Radhe Radhe, or Chabahil</div>
+          </div>
+          <button id="tips-close-btn" class="action-btn" type="button">Close</button>
+        </div>
+        <div class="log-list" style="max-height: 55vh; color: #e2e8f0; gap: 10px; font-size: 13px; line-height: 1.5;">
+          <div><strong>1. Start Zone (Pre-Ride):</strong> Always buckle your helmet strap audibly, physically touch and adjust both mirrors, and kick up the side stand <em>before</em> twisting the throttle. Examiners watch your hands.</div>
+          <div><strong>2. Figure-8 (Sightline & Rear Brake):</strong> Never stare at the yellow line right under your front tire—look 2–3 meters ahead toward the center crossover and exit. Keep gentle, steady throttle and modulate speed with the <strong>left (rear) brake</strong> so the scooter stays balanced and doesn't wobble.</div>
+          <div><strong>3. Narrow Plank (Fatta):</strong> Line up straight <em>before</em> the ramp lip. Keep your eyes locked on the far end of the plank (not down at the wood) and maintain a steady walking pace (~8–10 km/h). Never grab the front brake on the plank.</div>
+          <div><strong>4. U-Turn & Blinker:</strong> Right after dropping off the plank, thumb the <strong>Right Indicator</strong> before entering the curve. After straightening out, immediately cancel the indicator—leaving it blinking costs points.</div>
+          <div><strong>5. Traffic Light:</strong> Stop cleanly <em>behind</em> the white stop line on Red or Yellow. Keep your left foot down for stability and wait for Green.</div>
+          <div><strong>6. Speedbreakers (Bumps):</strong> Roll over all 4 bumps slowly (&lt;10–12 km/h) with light, steady throttle. Pulling the right (front) brake over a bump compresses the fork and causes a sudden balance stumble.</div>
+          <div><strong>7. Ramp / Ukalo (Hill-Start):</strong> Stop before the white line using the <strong>left (rear) brake</strong>. Keep the rear brake firmly squeezed while waiting 2 seconds for the Traffic Police judge's GO signal. To launch with zero rollback: hold rear brake + gently twist throttle until you feel the scooter pull forward, then smoothly release the rear brake!</div>
+        </div>
+        <button id="tips-ok-btn" class="restart-cta" type="button">Got It — Back to Trial</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+
+      // =========================================================================
+      // 1. SOFTWARE WEBGL DETECTION & RENDERER SETUP
+      // =========================================================================
+      const isSoftwareGl = (() => {
+        try {
+          const gl = document.createElement('canvas').getContext('webgl2');
+          if (!gl) return true;
+          const ext = gl.getExtension('WEBGL_debug_renderer_info');
+          const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+          const gpu = String(gl.getParameter(param));
+          gl.getExtension('WEBGL_lose_context')?.loseContext();
+          return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
+        } catch {
+          return true;
+        }
+      })();
+
+      const container = document.getElementById('canvas-container');
+      const renderer = new THREE.WebGLRenderer({
+        antialias: !isSoftwareGl,
+        powerPreference: 'high-performance',
+      });
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = !isSoftwareGl;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x8ec0e4);
+      scene.fog = new THREE.Fog(0x8ec0e4, 48, 135);
+
+      const camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.1, 220);
+
+      // Balanced outdoor lighting (warm Kathmandu sun + cool sky hemisphere)
+      const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x475569, 0.85);
+      scene.add(hemiLight);
+
+      const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.55);
+      sunLight.position.set(22, 36, 18);
+      if (!isSoftwareGl) {
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.camera.left = -36;
+        sunLight.shadow.camera.right = 36;
+        sunLight.shadow.camera.top = 36;
+        sunLight.shadow.camera.bottom = -36;
+        sunLight.shadow.camera.near = 5;
+        sunLight.shadow.camera.far = 95;
+        sunLight.shadow.bias = -0.0005;
+        sunLight.shadow.normalBias = 0.02;
+      }
+      scene.add(sunLight);
+
+      // =========================================================================
+      // 1B. PROCEDURAL WEB AUDIO (TRAFFIC POLICE WHISTLE & SCOOTER CVT HUM)
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = true;
+      let engineOsc = null;
+      let engineGain = null;
+
+      function ensureAudio() {
+        if (!audioEnabled) return null;
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          audioCtx = new AC();
+          // Continuous subtle CVT scooter hum
+          engineOsc = audioCtx.createOscillator();
+          engineGain = audioCtx.createGain();
+          engineOsc.type = 'sawtooth';
+          engineOsc.frequency.value = 58;
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 210;
+          engineGain.gain.value = 0.018;
+          engineOsc.connect(filter);
+          filter.connect(engineGain);
+          engineGain.connect(audioCtx.destination);
+          engineOsc.start();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        return audioCtx;
+      }
+
+      // Crisp Nepal Traffic Police pea-whistle
+      function playWhistle(pattern = 'short') {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const blasts = pattern === 'fail' ? [[0, 0.28], [0.34, 0.42]] : pattern === 'go' ? [[0, 0.22]] : [[0, 0.14]];
+        blasts.forEach(([offset, dur]) => {
+          const osc = ctx.createOscillator();
+          const lfo = ctx.createOscillator();
+          const lfoGain = ctx.createGain();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(2850, now + offset);
+          lfo.frequency.setValueAtTime(34, now + offset);
+          lfoGain.gain.setValueAtTime(140, now + offset);
+          lfo.connect(lfoGain);
+          lfoGain.connect(osc.frequency);
+          gain.gain.setValueAtTime(0.0001, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.09, now + offset + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + offset);
+          lfo.start(now + offset);
+          osc.stop(now + offset + dur + 0.02);
+          lfo.stop(now + offset + dur + 0.02);
+        });
+      }
+
+      // =========================================================================
+      // 2. COURSE GEOMETRY CONSTANTS & HEIGHT FIELD
+      // =========================================================================
+      const COURSE = {
+        fig8South: { x: 0, z: 3.3 },
+        fig8North: { x: 0, z: -3.3 },
+        fig8Rin: 1.9,
+        fig8Rout: 4.7,
+        plankX: 0,
+        plankZStart: -12.5,
+        plankZEnd: -18.5,
+        plankHalfW: 0.125, // 0.25m wide
+        plankH: 0.10,
+        plankLip: 0.4,
+        uturnCenter: { x: 4.5, z: -22.5 },
+        uturnRin: 3.0,
+        uturnRout: 6.0,
+        returnX: 9.0,
+        trafficStopZ: -12.0,
+        bumpsZ: [-6.5, -4.8, -3.1, -1.4],
+        bumpRadius: 0.11,
+        rampZUpStart: 2.5,
+        rampZUpEnd: 8.5,
+        rampZStopLine: 6.2,
+        rampZStopMin: 4.2,
+        rampZCrestEnd: 11.5,
+        rampZDownEnd: 17.5,
+        oraloZStopMin: 13.4,
+        oraloZStopLine: 15.2,
+        rampMaxH: 1.2,
+        finishZ: 19.0,
+      };
+
+      function groundHeightAt(x, z) {
+        // 1. Narrow Plank
+        if (Math.abs(x - COURSE.plankX) <= COURSE.plankHalfW + 0.05) {
+          if (z <= COURSE.plankZStart && z >= COURSE.plankZEnd) {
+            return COURSE.plankH;
+          }
+          if (z > COURSE.plankZStart && z <= COURSE.plankZStart + COURSE.plankLip) {
+            const t = 1 - (z - COURSE.plankZStart) / COURSE.plankLip;
+            return COURSE.plankH * Math.max(0, Math.min(1, t));
+          }
+          if (z < COURSE.plankZEnd && z >= COURSE.plankZEnd - COURSE.plankLip) {
+            const t = 1 - (COURSE.plankZEnd - z) / COURSE.plankLip;
+            return COURSE.plankH * Math.max(0, Math.min(1, t));
+          }
+        }
+
+        // 2. Speedbreakers (along x = 9.0 lane)
+        if (Math.abs(x - COURSE.returnX) <= 1.8) {
+          for (let i = 0; i < COURSE.bumpsZ.length; i++) {
+            const dz = z - COURSE.bumpsZ[i];
+            if (Math.abs(dz) < COURSE.bumpRadius) {
+              return Math.sqrt(Math.max(0, COURSE.bumpRadius * COURSE.bumpRadius - dz * dz));
+            }
+          }
+        }
+
+        // 3. Ramp / Ukalo (along x = 9.0 lane)
+        if (Math.abs(x - COURSE.returnX) <= 1.75) {
+          if (z >= COURSE.rampZUpStart && z <= COURSE.rampZUpEnd) {
+            const t = (z - COURSE.rampZUpStart) / (COURSE.rampZUpEnd - COURSE.rampZUpStart);
+            return COURSE.rampMaxH * t;
+          }
+          if (z > COURSE.rampZUpEnd && z <= COURSE.rampZCrestEnd) {
+            return COURSE.rampMaxH;
+          }
+          if (z > COURSE.rampZCrestEnd && z <= COURSE.rampZDownEnd) {
+            const t = 1 - (z - COURSE.rampZCrestEnd) / (COURSE.rampZDownEnd - COURSE.rampZCrestEnd);
+            return COURSE.rampMaxH * t;
+          }
+        }
+
+        return 0;
+      }
+
+      // =========================================================================
+      // 3. BUILD 3D TRIAL YARD ENVIRONMENT
+      // =========================================================================
+      const matAsphalt = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.92, metalness: 0.04 });
+      const matGrass = new THREE.MeshStandardMaterial({ color: 0x4d7c4f, roughness: 0.95, metalness: 0.0 });
+      const matYellowLine = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        roughness: 0.55,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      });
+      const matWhiteLine = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        roughness: 0.55,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      });
+      const matConcrete = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.85 });
+      const matPlank = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 });
+      const matCone = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
+
+      // Extended outdoor ground (grass perimeter + asphalt trial pad)
+      const grassGround = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), matGrass);
+      grassGround.rotation.x = -Math.PI / 2;
+      grassGround.position.y = -0.02;
+      grassGround.receiveShadow = true;
+      scene.add(grassGround);
+
+      const asphaltPad = new THREE.Mesh(new THREE.PlaneGeometry(34, 62), matAsphalt);
+      asphaltPad.rotation.x = -Math.PI / 2;
+      asphaltPad.position.set(4.5, 0, -4.0);
+      asphaltPad.receiveShadow = true;
+      scene.add(asphaltPad);
+
+      // Helper to paint flat road strip
+      function addPaintStrip(w, l, x, z, mat = matWhiteLine, rotY = 0) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), mat);
+        m.rotation.x = -Math.PI / 2;
+        m.rotation.z = rotY;
+        m.position.set(x, 0.015, z);
+        scene.add(m);
+        return m;
+      }
+
+      // Helper to paint arc line
+      function addArcLine(cx, cz, radius, startAngle, endAngle, width = 0.14, mat = matYellowLine, segs = 48) {
+        const geom = new THREE.RingGeometry(radius - width / 2, radius + width / 2, segs, 1, startAngle, endAngle - startAngle);
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(cx, 0.018, cz);
+        scene.add(mesh);
+        return mesh;
+      }
+
+      // --- Station 1: Start Zone ---
+      addPaintStrip(2.8, 0.16, 0, 12.6, matWhiteLine);
+      addPaintStrip(0.14, 4.2, -1.4, 14.7, matYellowLine);
+      addPaintStrip(0.14, 4.2, 1.4, 14.7, matYellowLine);
+      addPaintStrip(2.8, 0.14, 0, 16.8, matYellowLine);
+
+      // --- Station 2: Figure-8 Track ---
+      // Inner islands (raised concrete curb + yellow ring)
+      [COURSE.fig8South, COURSE.fig8North].forEach((c) => {
+        const island = new THREE.Mesh(
+          new THREE.CylinderGeometry(COURSE.fig8Rin - 0.08, COURSE.fig8Rin, 0.08, 28),
+          matConcrete
+        );
+        island.position.set(c.x, 0.04, c.z);
+        island.receiveShadow = true;
+        scene.add(island);
+
+        addArcLine(c.x, c.z, COURSE.fig8Rin, 0, Math.PI * 2, 0.15, matYellowLine, 48);
+      });
+
+      // Outer Figure-8 arcs (leaving entry gap at South & exit gap at North)
+      // Note: RingGeometry angle 0 is +X, PI/2 is -Z (since rotated -PI/2 around X)
+      addArcLine(COURSE.fig8South.x, COURSE.fig8South.z, COURSE.fig8Rout, -Math.PI * 0.38, Math.PI * 0.28, 0.16, matYellowLine, 40);
+      addArcLine(COURSE.fig8South.x, COURSE.fig8South.z, COURSE.fig8Rout, Math.PI * 0.72, Math.PI * 1.38, 0.16, matYellowLine, 40);
+      addArcLine(COURSE.fig8North.x, COURSE.fig8North.z, COURSE.fig8Rout, -Math.PI * 0.28, Math.PI * 0.38, 0.16, matYellowLine, 40);
+      addArcLine(COURSE.fig8North.x, COURSE.fig8North.z, COURSE.fig8Rout, Math.PI * 0.62, Math.PI * 1.28, 0.16, matYellowLine, 40);
+
+      // Entry & Exit corridor lines
+      addPaintStrip(0.14, 4.6, -1.4, 10.3, matYellowLine);
+      addPaintStrip(0.14, 4.6, 1.4, 10.3, matYellowLine);
+      addPaintStrip(0.14, 4.5, -1.4, -10.2, matYellowLine);
+      addPaintStrip(0.14, 4.5, 1.4, -10.2, matYellowLine);
+
+      // Sightline Markers (toggleable glowing 3D chevrons/beacons at crossover & exit)
+      const sightlineGroup = new THREE.Group();
+      const matSightline = new THREE.MeshStandardMaterial({
+        color: 0x06b6d4,
+        emissive: 0x06b6d4,
+        emissiveIntensity: 0.75,
+        roughness: 0.3,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const sightPoints = [
+        { x: 0, z: 0, label: 'Crossover' },
+        { x: 0, z: -8.5, label: 'Fig-8 Exit' },
+        { x: 0, z: -18.8, label: 'Plank End' },
+        { x: 9.0, z: -22.5, label: 'U-Turn Exit' },
+      ];
+      sightPoints.forEach((p) => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.05, 8, 20), matSightline);
+        ring.position.set(p.x, 1.15, p.z);
+        sightlineGroup.add(ring);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 8), matSightline);
+        pole.position.set(p.x, 0.45, p.z);
+        sightlineGroup.add(pole);
+      });
+      scene.add(sightlineGroup);
+
+      // Active Figure-8 Checkpoint Beacon (guides rider through the WHOLE 8)
+      const fig8BeaconMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        emissive: 0x10b981,
+        emissiveIntensity: 1.2,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const fig8Beacon = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 10, 24), fig8BeaconMat);
+      fig8Beacon.position.set(3.2, 1.0, 3.3);
+      scene.add(fig8Beacon);
+
+      // --- Station 3: Narrow Plank (6m long, 0.25m wide, 0.10m high) ---
+      const plankLen = Math.abs(COURSE.plankZEnd - COURSE.plankZStart);
+      const plankMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, COURSE.plankH, plankLen), matPlank);
+      plankMesh.position.set(COURSE.plankX, COURSE.plankH / 2, (COURSE.plankZStart + COURSE.plankZEnd) / 2);
+      plankMesh.castShadow = true;
+      plankMesh.receiveShadow = true;
+      scene.add(plankMesh);
+
+      // Plank entry & exit ramp lips
+      const lipGeom = new THREE.BoxGeometry(0.25, 0.04, COURSE.plankLip);
+      const lipStart = new THREE.Mesh(lipGeom, matPlank);
+      lipStart.position.set(0, COURSE.plankH / 2 - 0.01, COURSE.plankZStart + COURSE.plankLip / 2);
+      lipStart.rotation.x = 0.24;
+      scene.add(lipStart);
+
+      const lipEnd = new THREE.Mesh(lipGeom, matPlank);
+      lipEnd.position.set(0, COURSE.plankH / 2 - 0.01, COURSE.plankZEnd - COURSE.plankLip / 2);
+      lipEnd.rotation.x = -0.24;
+      scene.add(lipEnd);
+
+      // Plank alignment guide dashes
+      for (let z = -8.8; z >= -12.0; z -= 0.8) {
+        addPaintStrip(0.08, 0.4, 0, z, matWhiteLine);
+      }
+
+      // --- Station 4: U-Turn Corridor ---
+      addPaintStrip(0.14, 4.0, -1.5, -20.5, matYellowLine);
+      addPaintStrip(0.14, 4.0, 1.5, -20.5, matYellowLine);
+      addArcLine(COURSE.uturnCenter.x, COURSE.uturnCenter.z, COURSE.uturnRin, 0, Math.PI, 0.16, matYellowLine, 36);
+      addArcLine(COURSE.uturnCenter.x, COURSE.uturnCenter.z, COURSE.uturnRout, 0, Math.PI, 0.16, matYellowLine, 48);
+
+      // Return lane side lines (x = 9.0, width 3.0m)
+      addPaintStrip(0.14, 43.0, COURSE.returnX - 1.5, -1.0, matYellowLine);
+      addPaintStrip(0.14, 43.0, COURSE.returnX + 1.5, -1.0, matYellowLine);
+
+      // --- Station 5: Traffic Light ---
+      addPaintStrip(3.0, 0.24, COURSE.returnX, COURSE.trafficStopZ, matWhiteLine);
+
+      const tlGroup = new THREE.Group();
+      tlGroup.position.set(COURSE.returnX + 2.1, 0, COURSE.trafficStopZ + 0.8);
+      const tlPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 10), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }));
+      tlPole.position.y = 1.7;
+      tlGroup.add(tlPole);
+
+      const tlBox = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.25, 0.35), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 }));
+      tlBox.position.set(-0.2, 3.1, 0);
+      tlGroup.add(tlBox);
+
+      const tlRedMat = new THREE.MeshStandardMaterial({ color: 0x450a0a, emissive: 0xef4444, emissiveIntensity: 1.8 });
+      const tlYellowMat = new THREE.MeshStandardMaterial({ color: 0x451a03, emissive: 0xf59e0b, emissiveIntensity: 0.05 });
+      const tlGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, emissive: 0x10b981, emissiveIntensity: 0.05 });
+
+      const bulbGeom = new THREE.SphereGeometry(0.13, 12, 12);
+      const tlRedBulb = new THREE.Mesh(bulbGeom, tlRedMat);
+      tlRedBulb.position.set(-0.2, 3.45, -0.15);
+      const tlYellowBulb = new THREE.Mesh(bulbGeom, tlYellowMat);
+      tlYellowBulb.position.set(-0.2, 3.1, -0.15);
+      const tlGreenBulb = new THREE.Mesh(bulbGeom, tlGreenMat);
+      tlGreenBulb.position.set(-0.2, 2.75, -0.15);
+      tlGroup.add(tlRedBulb, tlYellowBulb, tlGreenBulb);
+      scene.add(tlGroup);
+
+      // --- Station 6: Speedbreakers (4 half-cylinder concrete bumps) ---
+      const bumpGeom = new THREE.CylinderGeometry(COURSE.bumpRadius, COURSE.bumpRadius, 3.0, 14, 1, false, 0, Math.PI);
+      const matBump = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 });
+      COURSE.bumpsZ.forEach((bz) => {
+        const bump = new THREE.Mesh(bumpGeom, matBump);
+        bump.rotation.z = Math.PI / 2;
+        bump.position.set(COURSE.returnX, 0, bz);
+        bump.castShadow = true;
+        bump.receiveShadow = true;
+        scene.add(bump);
+      });
+
+      // --- Station 7: Ramp / Ukalo ---
+      // Build extruded 3D ramp profile along Z
+      const rampShape = new THREE.Shape();
+      rampShape.moveTo(COURSE.rampZUpStart, 0);
+      rampShape.lineTo(COURSE.rampZUpEnd, COURSE.rampMaxH);
+      rampShape.lineTo(COURSE.rampZCrestEnd, COURSE.rampMaxH);
+      rampShape.lineTo(COURSE.rampZDownEnd, 0);
+      rampShape.closePath();
+
+      const rampGeom = new THREE.ExtrudeGeometry(rampShape, { depth: 3.1, bevelEnabled: false });
+      rampGeom.rotateY(-Math.PI / 2); // maps shape X -> +Z, extrude Z -> -X
+      const rampMesh = new THREE.Mesh(rampGeom, matConcrete);
+      rampMesh.position.set(COURSE.returnX + 1.55, 0, 0);
+      rampMesh.castShadow = true;
+      rampMesh.receiveShadow = true;
+      scene.add(rampMesh);
+
+      // Ukalo Stop Box: Lower Line (must pass) & Upper Stop Line (do not cross) on uphill slope
+      const slopeAngle = Math.atan2(COURSE.rampMaxH, COURSE.rampZUpEnd - COURSE.rampZUpStart);
+
+      const lowerStopY = groundHeightAt(COURSE.returnX, COURSE.rampZStopMin) + 0.02;
+      const ukaloLowerLine = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.22), matYellowLine);
+      ukaloLowerLine.rotation.x = -Math.PI / 2 - slopeAngle;
+      ukaloLowerLine.position.set(COURSE.returnX, lowerStopY, COURSE.rampZStopMin);
+      scene.add(ukaloLowerLine);
+
+      const stopY = groundHeightAt(COURSE.returnX, COURSE.rampZStopLine) + 0.02;
+      const ukaloStopLine = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.24), matWhiteLine);
+      ukaloStopLine.rotation.x = -Math.PI / 2 - slopeAngle;
+      ukaloStopLine.position.set(COURSE.returnX, stopY, COURSE.rampZStopLine);
+      scene.add(ukaloStopLine);
+
+      // Downhill (Oralo) Stop Box: Yellow entry line (13.4) & White stop line (15.2) + Examiner signal pole
+      const oraloMinY = groundHeightAt(COURSE.returnX, COURSE.oraloZStopMin) + 0.02;
+      const oraloLowerLine = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.22), matYellowLine);
+      oraloLowerLine.rotation.x = -Math.PI / 2 + slopeAngle;
+      oraloLowerLine.position.set(COURSE.returnX, oraloMinY, COURSE.oraloZStopMin);
+      scene.add(oraloLowerLine);
+
+      const oraloY = groundHeightAt(COURSE.returnX, COURSE.oraloZStopLine) + 0.02;
+      const oraloStopLine = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.24), matWhiteLine);
+      oraloStopLine.rotation.x = -Math.PI / 2 + slopeAngle;
+      oraloStopLine.position.set(COURSE.returnX, oraloY, COURSE.oraloZStopLine);
+      scene.add(oraloStopLine);
+
+      const oraloPole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 8), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+      oraloPole.position.set(COURSE.returnX + 1.9, 1.1, COURSE.oraloZStopLine);
+      scene.add(oraloPole);
+
+      const oraloLightMat = new THREE.MeshStandardMaterial({ color: 0x450a0a, emissive: 0xef4444, emissiveIntensity: 1.4 });
+      const oraloLight = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.25), oraloLightMat);
+      oraloLight.position.set(COURSE.returnX + 1.9, 2.25, COURSE.oraloZStopLine);
+      scene.add(oraloLight);
+
+      // Examiner GO/STOP signal pole at Ukalo
+      const ukaloPole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 8), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+      ukaloPole.position.set(COURSE.returnX + 1.9, 1.1, COURSE.rampZStopLine);
+      scene.add(ukaloPole);
+
+      const ukaloLightMat = new THREE.MeshStandardMaterial({ color: 0x450a0a, emissive: 0xef4444, emissiveIntensity: 1.4 });
+      const ukaloLight = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.25), ukaloLightMat);
+      ukaloLight.position.set(COURSE.returnX + 1.9, 2.25, COURSE.rampZStopLine);
+      scene.add(ukaloLight);
+
+      // Finish Arch
+      const archMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4 });
+      const archL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 3.2, 0.22), archMat);
+      archL.position.set(COURSE.returnX - 1.7, 1.6, COURSE.finishZ);
+      const archR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 3.2, 0.22), archMat);
+      archR.position.set(COURSE.returnX + 1.7, 1.6, COURSE.finishZ);
+      const archTop = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.45, 0.28), archMat);
+      archTop.position.set(COURSE.returnX, 3.2, COURSE.finishZ);
+      scene.add(archL, archR, archTop);
+
+      // Instanced Traffic Cones around key corners
+      const conePositions = [
+        [-1.6, 12.6], [1.6, 12.6], [-1.6, 8.2], [1.6, 8.2],
+        [-1.6, -8.2], [1.6, -8.2], [-1.6, -12.5], [1.6, -12.5],
+        [-1.6, -18.5], [1.6, -18.5], [7.3, -22.5], [10.7, -22.5],
+        [7.3, -12.0], [10.7, -12.0], [7.3, 2.5], [10.7, 2.5],
+      ];
+      const coneGeom = new THREE.ConeGeometry(0.18, 0.52, 10);
+      const conesMesh = new THREE.InstancedMesh(coneGeom, matCone, conePositions.length);
+      const dummy = new THREE.Object3D();
+      conePositions.forEach(([cx, cz], i) => {
+        dummy.position.set(cx, 0.26, cz);
+        dummy.updateMatrix();
+        conesMesh.setMatrixAt(i, dummy.matrix);
+      });
+      conesMesh.computeBoundingSphere();
+      scene.add(conesMesh);
+
+      // Perimeter Fence Posts & Distant Hills (natural outdoor perimeter)
+      const hillMat = new THREE.MeshStandardMaterial({ color: 0x3b6248, roughness: 0.95 });
+      for (let i = 0; i < 14; i++) {
+        const ang = (i / 14) * Math.PI * 2;
+        const dist = 78 + (i % 3) * 14;
+        const hill = new THREE.Mesh(new THREE.ConeGeometry(22 + (i % 4) * 6, 14 + (i % 3) * 6, 7), hillMat);
+        hill.position.set(Math.cos(ang) * dist, 5, Math.sin(ang) * dist - 4);
+        scene.add(hill);
+      }
+
+      // Painted white directional arrows on asphalt to guide Figure-8 & U-Turn flow
+      function addRoadArrow(x, z, rotY) {
+        const g = new THREE.Group();
+        g.position.set(x, 0.02, z);
+        g.rotation.y = rotY;
+        const shaft = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.9), matWhiteLine);
+        shaft.rotation.x = -Math.PI / 2;
+        const headShape = new THREE.Shape();
+        headShape.moveTo(0, 0.45);
+        headShape.lineTo(-0.32, 0);
+        headShape.lineTo(0.32, 0);
+        headShape.closePath();
+        const head = new THREE.Mesh(new THREE.ShapeGeometry(headShape), matWhiteLine);
+        head.rotation.x = -Math.PI / 2;
+        head.position.z = -0.45;
+        g.add(shaft, head);
+        scene.add(g);
+      }
+
+      // Guide arrows: Start -> Fig-8 Right-then-Left -> Plank -> U-Turn -> Return -> Ukalo
+      addRoadArrow(0, 10.5, 0);
+      addRoadArrow(2.8, 5.2, -0.8);
+      addRoadArrow(2.8, 1.4, 0.8);
+      addRoadArrow(-2.8, -1.4, 0.8);
+      addRoadArrow(-2.8, -5.2, -0.8);
+      addRoadArrow(0, -10.4, 0);
+      addRoadArrow(0, -20.5, 0);
+      addRoadArrow(4.5, -27.0, -Math.PI / 2);
+      addRoadArrow(9.0, -18.0, Math.PI);
+      addRoadArrow(9.0, 0.5, Math.PI);
+
+      // =========================================================================
+      // 3B. NEPAL DoTM TRIAL CENTER SCENERY, JUDGES (TRAFFIC POLICE) & SIGNS
+      // =========================================================================
+      function makeSignTexture(title, subtitle, bg = '#1e3a8a', fg = '#f8fafc') {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 192;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(8, 8, c.width - 16, c.height - 16);
+        ctx.fillStyle = fg;
+        ctx.font = 'bold 46px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title, 256, 86);
+        ctx.fillStyle = '#fde047';
+        ctx.font = '600 28px sans-serif';
+        ctx.fillText(subtitle, 256, 140);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        return tex;
+      }
+
+      function addStationSign(x, z, rotY, title, subtitle) {
+        const g = new THREE.Group();
+        g.position.set(x, 0, z);
+        g.rotation.y = rotY;
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.0, 8), matConcrete);
+        pole.position.y = 1.0;
+        const board = new THREE.Mesh(
+          new THREE.BoxGeometry(1.6, 0.62, 0.06),
+          new THREE.MeshStandardMaterial({ map: makeSignTexture(title, subtitle), roughness: 0.5 })
+        );
+        board.position.y = 2.05;
+        g.add(pole, board);
+        scene.add(g);
+      }
+
+      // Station signboards along the yard
+      addStationSign(-2.4, 13.5, 0.35, '1. START ZONE', 'Helmet · Mirrors · Stand');
+      addStationSign(-5.6, 3.0, 0.5, '2. FIGURE-8', '20 PTS · Stay Inside Lines');
+      addStationSign(-2.2, -12.5, 0.25, '3. NARROW PLANK', '10 PTS · Do Not Stop');
+      addStationSign(-2.4, -22.5, 0.3, '4. U-TURN', '10 PTS · Right Blinker (E)');
+      addStationSign(12.2, -13.0, -0.4, '5. TRAFFIC LIGHT', '15 PTS · Cross on Green');
+      addStationSign(12.2, -5.0, -0.3, '6. SPEEDBREAKERS', '15 PTS · Slow <12 km/h');
+      addStationSign(12.4, 4.2, -0.35, '7. UKALO RAMP', '20 PTS · Stop 2s · No Rollback');
+
+      // DoTM Control Booth (Tin-roof examiner shed)
+      const boothGroup = new THREE.Group();
+      boothGroup.position.set(-10.5, 0, 2.0);
+      const boothBase = new THREE.Mesh(
+        new THREE.BoxGeometry(4.2, 2.6, 6.4),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 })
+      );
+      boothBase.position.y = 1.3;
+      boothBase.castShadow = true;
+      boothBase.receiveShadow = true;
+      const boothRoof = new THREE.Mesh(
+        new THREE.BoxGeometry(4.8, 0.18, 7.0),
+        new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5, metalness: 0.3 })
+      );
+      boothRoof.position.y = 2.75;
+      boothRoof.rotation.z = -0.08;
+      const boothSign = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.9, 4.6),
+        new THREE.MeshStandardMaterial({
+          map: makeSignTexture('DoTM NEPAL TRIAL CENTER', 'Category K (Scooter) · Practical Exam', '#0f172a', '#ffffff'),
+          roughness: 0.45,
+        })
+      );
+      boothSign.position.set(2.15, 2.25, 0);
+      boothGroup.add(boothBase, boothRoof, boothSign);
+      scene.add(boothGroup);
+
+      // Red & White Striped Barricades around waiting area
+      const matRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.55 });
+      for (let i = 0; i < 6; i++) {
+        const bx = -7.6;
+        const bz = -6.0 + i * 3.2;
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.22, 2.6), i % 2 === 0 ? matRed : matWhiteLine);
+        bar.position.set(bx, 0.72, bz);
+        const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 6), matConcrete);
+        leg1.position.set(bx, 0.4, bz - 1.1);
+        const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 6), matConcrete);
+        leg2.position.set(bx, 0.4, bz + 1.1);
+        scene.add(bar, leg1, leg2);
+      }
+
+      // Waiting Trial Applicants (Spectators behind barricade)
+      const specColors = [0x0ea5e9, 0xf97316, 0x8b5cf6, 0x14b8a6, 0xec4899];
+      for (let i = 0; i < 5; i++) {
+        const sg = new THREE.Group();
+        sg.position.set(-8.6, 0, -4.5 + i * 2.8);
+        sg.rotation.y = Math.PI / 2;
+        const legs = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.78, 0.2), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        legs.position.y = 0.39;
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.56, 0.22), new THREE.MeshStandardMaterial({ color: specColors[i] }));
+        torso.position.y = 1.06;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), new THREE.MeshStandardMaterial({ color: 0xd9a074 }));
+        head.position.y = 1.48;
+        sg.add(legs, torso, head);
+        scene.add(sg);
+      }
+
+      // Parked Waiting Scooters lined up near Start Zone & Waiting Area
+      const parkedScooterColors = [0xeab308, 0x06b6d4, 0x10b981, 0xf97316];
+      parkedScooterColors.forEach((col, i) => {
+        const pg = new THREE.Group();
+        pg.position.set(-5.2, 0, 11.2 + i * 1.9);
+        pg.rotation.y = -Math.PI / 2 + 0.15;
+        const pMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.38, metalness: 0.2 });
+        const pDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.34, 0.74), pMat);
+        body.position.set(0, 0.48, 0.38);
+        const apron = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.58, 0.22), pMat);
+        apron.position.set(0, 0.60, -0.38);
+        apron.rotation.x = -0.18;
+        const board = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, 0.72), pDark);
+        board.position.set(0, 0.26, 0.04);
+        const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.11, 12), pDark);
+        w1.rotation.z = Math.PI / 2;
+        w1.position.set(0, 0.2, -0.55);
+        const w2 = w1.clone();
+        w2.position.set(0, 0.2, 0.55);
+        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.62, 6), pDark);
+        bar.rotation.z = Math.PI / 2;
+        bar.position.set(0, 0.94, -0.42);
+        pg.add(body, apron, board, w1, w2, bar);
+        scene.add(pg);
+      });
+
+      // 3D Nepal Traffic Police Judges (Uniformed: light-blue shirt, navy pants, cap, white belt, clipboard/paddle)
+      const judges = [];
+      const matPoliceShirt = new THREE.MeshStandardMaterial({ color: 0x60a5fa, roughness: 0.7 });
+      const matPolicePants = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.8 });
+      const matSkin = new THREE.MeshStandardMaterial({ color: 0xd69e72, roughness: 0.75 });
+      const matBelt = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+      const matClipboard = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+      const matCapBrim = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+      const matPaddleStick = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.8 });
+      let ukaloPaddleMat = null;
+
+      function createTrafficJudge(x, z, rotY, hasPaddle = false) {
+        const jGroup = new THREE.Group();
+        jGroup.position.set(x, 0, z);
+        jGroup.rotation.y = rotY;
+
+        const pants = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.84, 0.22), matPolicePants);
+        pants.position.y = 0.42;
+        pants.castShadow = true;
+
+        const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.56, 0.24), matPoliceShirt);
+        shirt.position.y = 1.12;
+        shirt.castShadow = true;
+
+        // White reflective traffic belt
+        const belt = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.26), matBelt);
+        belt.position.y = 0.86;
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), matSkin);
+        head.position.y = 1.54;
+
+        // Peaked Traffic Police Cap
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.13, 0.08, 12), matPolicePants);
+        cap.position.y = 1.65;
+        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.14), matCapBrim);
+        brim.position.set(0, 1.62, 0.10);
+
+        // Left arm holding clipboard
+        const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.42, 0.11), matPoliceShirt);
+        leftArm.position.set(-0.26, 1.10, 0.12);
+        leftArm.rotation.x = -0.8;
+        const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.03, 0.30), matClipboard);
+        clipboard.position.set(-0.24, 1.02, 0.32);
+
+        // Animated Right Arm (waves / holds STOP-GO paddle)
+        const rightArmPivot = new THREE.Group();
+        rightArmPivot.position.set(0.26, 1.32, 0);
+        const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.46, 0.11), matPoliceShirt);
+        rightArm.position.set(0, -0.20, 0);
+        rightArmPivot.add(rightArm);
+
+        if (hasPaddle) {
+          ukaloPaddleMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.6 });
+          const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.36, 6), matPaddleStick);
+          stick.position.set(0, -0.52, 0);
+          const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 16), ukaloPaddleMat);
+          disc.rotation.x = Math.PI / 2;
+          disc.position.set(0, -0.72, 0);
+          rightArmPivot.add(stick, disc);
+          rightArmPivot.rotation.z = 2.6; // raised high
+        }
+
+        jGroup.add(pants, shirt, belt, head, cap, brim, leftArm, clipboard, rightArmPivot);
+        scene.add(jGroup);
+        judges.push({ group: jGroup, rightArmPivot, hasPaddle, baseYaw: rotY });
+      }
+
+      // Place 3 Traffic Police Judges at key DoTM observation posts
+      createTrafficJudge(2.3, 13.2, -Math.PI / 2, false);   // Start Zone Examiner
+      createTrafficJudge(-3.8, -11.5, Math.PI / 2, false);  // Figure-8 & Narrow Plank Judge
+      createTrafficJudge(COURSE.returnX + 2.2, COURSE.rampZStopLine, -Math.PI / 2, true); // Ukalo Ramp Judge with Paddle
+
+      // =========================================================================
+      // 4. COMPOSITE 3D SCOOTER & RIDER MODEL
+      // =========================================================================
+      const scooterRoot = new THREE.Group();
+      const scooterTiltGroup = new THREE.Group(); // handles roll & pitch
+      scooterRoot.add(scooterTiltGroup);
+
+      const matBody = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.35, metalness: 0.25 });
+      const matTrim = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.75, metalness: 0.1 });
+      const matChrome = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.25, metalness: 0.85 });
+      const matTire = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.92 });
+      const matSeat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.85 });
+      const matRiderJacket = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.7 });
+      const matHelmet = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.28, metalness: 0.1 });
+
+      // Blinker emissive materials
+      const matBlinkL = new THREE.MeshStandardMaterial({ color: 0x78350f, emissive: 0xf59e0b, emissiveIntensity: 0 });
+      const matBlinkR = new THREE.MeshStandardMaterial({ color: 0x78350f, emissive: 0xf59e0b, emissiveIntensity: 0 });
+
+      // Wheelbase = 1.25m (Rear at z=+0.625, Front at z=-0.625)
+      const WHEELBASE = 1.25;
+      const WHEEL_R = 0.22;
+
+      const wheelGeom = new THREE.CylinderGeometry(WHEEL_R, WHEEL_R, 0.12, 16);
+      wheelGeom.rotateZ(Math.PI / 2);
+
+      // Rear Wheel
+      const rearWheel = new THREE.Mesh(wheelGeom, matTire);
+      rearWheel.position.set(0, WHEEL_R, WHEELBASE / 2);
+      rearWheel.castShadow = true;
+      scooterTiltGroup.add(rearWheel);
+
+      // Floorboard & Chassis
+      const floorboard = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.1, 0.78), matTrim);
+      floorboard.position.set(0, 0.28, 0.05);
+      floorboard.castShadow = true;
+      scooterTiltGroup.add(floorboard);
+
+      // Rear Body & Seat
+      const rearBody = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.36, 0.78), matBody);
+      rearBody.position.set(0, 0.50, 0.45);
+      rearBody.castShadow = true;
+      scooterTiltGroup.add(rearBody);
+
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.68), matSeat);
+      seat.position.set(0, 0.74, 0.42);
+      scooterTiltGroup.add(seat);
+
+      // Exhaust
+      const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.55, 10), matChrome);
+      exhaust.rotation.x = Math.PI / 2 - 0.15;
+      exhaust.position.set(0.28, 0.30, 0.55);
+      scooterTiltGroup.add(exhaust);
+
+      // Front Apron
+      const frontApron = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.62, 0.24), matBody);
+      frontApron.position.set(0, 0.62, -0.42);
+      frontApron.rotation.x = -0.18;
+      frontApron.castShadow = true;
+      scooterTiltGroup.add(frontApron);
+
+      // Taillight & Rear Blinkers
+      const tailLight = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.10, 0.06),
+        new THREE.MeshStandardMaterial({ color: 0x991b1b, emissive: 0xef4444, emissiveIntensity: 0.7 })
+      );
+      tailLight.position.set(0, 0.60, 0.85);
+      scooterTiltGroup.add(tailLight);
+
+      const blinkRearL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.06), matBlinkL);
+      blinkRearL.position.set(-0.18, 0.60, 0.85);
+      const blinkRearR = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.06), matBlinkR);
+      blinkRearR.position.set(0.18, 0.60, 0.85);
+      scooterTiltGroup.add(blinkRearL, blinkRearR);
+
+      // Front Steering Assembly (pivots on Y)
+      const steerGroup = new THREE.Group();
+      steerGroup.position.set(0, 0, -WHEELBASE / 2);
+      scooterTiltGroup.add(steerGroup);
+
+      const frontWheel = new THREE.Mesh(wheelGeom, matTire);
+      frontWheel.position.set(0, WHEEL_R, 0);
+      frontWheel.castShadow = true;
+      steerGroup.add(frontWheel);
+
+      const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.78, 8), matChrome);
+      fork.position.set(0, 0.60, 0.06);
+      fork.rotation.x = -0.18;
+      steerGroup.add(fork);
+
+      const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.68, 8), matTrim);
+      handlebar.rotation.z = Math.PI / 2;
+      handlebar.position.set(0, 0.98, 0.12);
+      steerGroup.add(handlebar);
+
+      // 3D Handlebar Grips, Brake Levers & Speedometer Pod (visible in 1st-Person POV!)
+      const gripGeom = new THREE.CylinderGeometry(0.028, 0.028, 0.14, 8);
+      gripGeom.rotateZ(Math.PI / 2);
+      const gripL = new THREE.Mesh(gripGeom, matSeat);
+      gripL.position.set(-0.30, 0.98, 0.12);
+      const gripR = new THREE.Mesh(gripGeom, matSeat);
+      gripR.position.set(0.30, 0.98, 0.12);
+      const speedoPod = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.10, 0.14), matTrim);
+      speedoPod.position.set(0, 1.01, 0.11);
+      speedoPod.rotation.x = 0.35;
+      const speedoFace = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.18, 0.07),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x06b6d4, emissiveIntensity: 0.45 })
+      );
+      speedoFace.position.set(0, 1.03, 0.182);
+      speedoFace.rotation.x = -0.35;
+      steerGroup.add(gripL, gripR, speedoPod, speedoFace);
+
+      const headlight = new THREE.Mesh(
+        new THREE.BoxGeometry(0.20, 0.13, 0.12),
+        new THREE.MeshStandardMaterial({ color: 0xfef3c7, emissive: 0xfef08a, emissiveIntensity: 0.6 })
+      );
+      headlight.position.set(0, 0.96, 0.03);
+      steerGroup.add(headlight);
+
+      const blinkFrontL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.08), matBlinkL);
+      blinkFrontL.position.set(-0.19, 0.96, 0.05);
+      const blinkFrontR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.08), matBlinkR);
+      blinkFrontR.position.set(0.19, 0.96, 0.05);
+      steerGroup.add(blinkFrontL, blinkFrontR);
+
+      // Adjustable Left & Right Mirrors (tilt visibly + glass glint when key 2 pressed)
+      const matMirrorGlass = new THREE.MeshStandardMaterial({ color: 0x93c5fd, emissive: 0x38bdf8, emissiveIntensity: 0.1, roughness: 0.15, metalness: 0.9 });
+      const mirrorPivotL = new THREE.Group();
+      mirrorPivotL.position.set(-0.26, 1.06, 0.12);
+      const mirrorStemL = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.14, 6), matChrome);
+      mirrorStemL.position.y = 0.05;
+      const mirrorHeadL = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.03), matTrim);
+      mirrorHeadL.position.set(-0.04, 0.11, 0);
+      const mirrorGlassL = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.06), matMirrorGlass);
+      mirrorGlassL.position.set(-0.04, 0.11, 0.017);
+      mirrorPivotL.add(mirrorStemL, mirrorHeadL, mirrorGlassL);
+      mirrorPivotL.rotation.set(0.45, -0.5, 0.65); // unadjusted initially
+      steerGroup.add(mirrorPivotL);
+
+      const mirrorPivotR = new THREE.Group();
+      mirrorPivotR.position.set(0.26, 1.06, 0.12);
+      const mirrorStemR = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.14, 6), matChrome);
+      mirrorStemR.position.y = 0.05;
+      const mirrorHeadR = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.03), matTrim);
+      mirrorHeadR.position.set(0.04, 0.11, 0);
+      const mirrorGlassR = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.06), matMirrorGlass);
+      mirrorGlassR.position.set(0.04, 0.11, 0.017);
+      mirrorPivotR.add(mirrorStemR, mirrorHeadR, mirrorGlassR);
+      mirrorPivotR.rotation.set(0.45, 0.5, -0.65); // unadjusted initially
+      steerGroup.add(mirrorPivotR);
+
+      // Side Stand / Kickstand (rotates up visibly when key 3 pressed)
+      const kickstandPivot = new THREE.Group();
+      kickstandPivot.position.set(-0.22, 0.24, 0.18);
+      const kickstandBar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.36, 8), matChrome);
+      kickstandBar.position.set(-0.06, -0.15, 0);
+      kickstandBar.rotation.z = -0.38;
+      kickstandPivot.add(kickstandBar);
+      scooterTiltGroup.add(kickstandPivot);
+
+      // Stylized Low-Poly Rider with Fluorescent Nepal Trial Applicant Bib
+      const matTrialBib = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xf97316, emissiveIntensity: 0.18, roughness: 0.65 });
+      const riderTorso = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.24), matRiderJacket);
+      riderTorso.position.set(0, 1.06, 0.34);
+      riderTorso.rotation.x = 0.14;
+      riderTorso.castShadow = true;
+      scooterTiltGroup.add(riderTorso);
+
+      const riderBib = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.34, 0.26), matTrialBib);
+      riderBib.position.set(0, 1.08, 0.34);
+      riderBib.rotation.x = 0.14;
+      scooterTiltGroup.add(riderBib);
+
+      // Rider Left Leg (kicks side stand up on Key 3)
+      const riderLeftLegPivot = new THREE.Group();
+      riderLeftLegPivot.position.set(-0.18, 0.72, 0.24);
+      const riderLeftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.44, 0.14), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 }));
+      riderLeftLeg.position.set(0, -0.22, -0.06);
+      riderLeftLegPivot.add(riderLeftLeg);
+      scooterTiltGroup.add(riderLeftLegPivot);
+
+      // Rider Bare Head (visible before Helmet is worn on Key 1)
+      const riderHead = new THREE.Mesh(new THREE.SphereGeometry(0.135, 14, 12), matSkin);
+      riderHead.position.set(0, 1.45, 0.28);
+      const riderHair = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), matSeat);
+      riderHair.position.set(0, 1.46, 0.28);
+      scooterTiltGroup.add(riderHead, riderHair);
+
+      // Animated Helmet Group (starts resting above/beside head, drops onto head + visor snaps down on Key 1)
+      const helmetGroup = new THREE.Group();
+      helmetGroup.position.set(0.34, 1.02, 0.05); // resting on right lap/handlebar initially
+      helmetGroup.rotation.set(0.35, 0.4, -0.3);
+      const riderHelmet = new THREE.Mesh(new THREE.SphereGeometry(0.165, 14, 12), matHelmet);
+      riderHelmet.castShadow = true;
+      const visorPivot = new THREE.Group();
+      visorPivot.position.set(0, 0.03, -0.08);
+      visorPivot.rotation.x = -0.95; // visor raised initially
+      const riderVisor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.09, 0.12), matTrim);
+      riderVisor.position.set(0, -0.02, -0.04);
+      visorPivot.add(riderVisor);
+      helmetGroup.add(riderHelmet, visorPivot);
+      scooterTiltGroup.add(helmetGroup);
+
+      scene.add(scooterRoot);
+
+      // =========================================================================
+      // 5. GAME STATE, SCORING & CONTROLS
+      // =========================================================================
+      const keys = {};
+      const state = {
+        x: 0,
+        z: 14.5,
+        y: 0,
+        yaw: 0, // 0 = facing -Z
+        speed: 0, // m/s
+        steer: 0, // rad
+        roll: 0,
+        pitch: 0,
+        suspY: 0,
+        suspVy: 0,
+        wobbleTimer: 0,
+        blinker: 'none', // 'none' | 'left' | 'right'
+        cameraMode: 'chase', // 'chase' | 'sightline'
+        showSightlines: true,
+        // Pre-ride checklist
+        helmetDone: false,
+        mirrorsDone: false,
+        standUp: false,
+        // Scoring
+        score: 100,
+        finished: false,
+        failed: false,
+        failReason: '',
+        startZoneChecked: false,
+        currentStation: 1,
+        footDownCount: 0,
+        fig8Touches: 0,
+        fig8TouchCooldown: 0,
+        fig8Step: 0, // 0=start, 1=south loop, 2=crossover, 3=north loop (mandatory!)
+        plankEntered: false,
+        plankCleared: false,
+        uturnBlinkerArmed: false,
+        uturnEntered: false,
+        uturnCleared: false,
+        uturnBlinkerCancelChecked: false,
+        trafficChecked: false,
+        bumpsEntered: false,
+        bumpsCleared: false,
+        bumpsCooldown: 0,
+        ukaloEntered: false,
+        ukaloStopped: false,
+        ukaloHoldTime: 0,
+        ukaloGoGranted: false,
+        ukaloStopZ: 0,
+        ukaloCleared: false,
+        oraloStopped: false,
+        oraloHoldTime: 0,
+        oraloGoGranted: false,
+        // Traffic light cycle
+        tlTimer: 0,
+        tlPhase: 'red', // red -> green -> yellow
+        // Station breakdown
+        stations: [
+          { name: '1. Start Zone', max: 10, earned: 10, status: 'Active' },
+          { name: '2. Figure-8 Track', max: 20, earned: 20, status: 'Pending' },
+          { name: '3. Narrow Plank', max: 10, earned: 10, status: 'Pending' },
+          { name: '4. U-Turn Corridor', max: 10, earned: 10, status: 'Pending' },
+          { name: '5. Traffic Light', max: 15, earned: 15, status: 'Pending' },
+          { name: '6. Speedbreakers', max: 15, earned: 15, status: 'Pending' },
+          { name: '7. Ramp / Ukalo', max: 20, earned: 20, status: 'Pending' },
+        ],
+        logs: [],
+      };
+
+      // DOM refs
+      const elScore = document.getElementById('hud-score');
+      const elStation = document.getElementById('hud-station');
+      const elStationSub = document.getElementById('hud-station-sub');
+      const elSpeed = document.getElementById('hud-speed');
+      const elSlope = document.getElementById('hud-slope');
+      const elBalanceMarker = document.getElementById('balance-marker');
+      const elFeed = document.getElementById('examiner-feed');
+      const elUkaloBanner = document.getElementById('ukalo-banner');
+      const elBlinkL = document.getElementById('btn-blink-l');
+      const elBlinkR = document.getElementById('btn-blink-r');
+      const elChk1 = document.getElementById('chk-1');
+      const elChk2 = document.getElementById('chk-2');
+      const elChk3 = document.getElementById('chk-3');
+      const elBtnCam = document.getElementById('btn-cam');
+      const elBtnMarkers = document.getElementById('btn-markers');
+      const elModal = document.getElementById('scorecard-modal');
+
+      function notify(msg, type = 'info') {
+        state.logs.push(msg);
+        const toast = document.createElement('div');
+        toast.className = `examiner-toast ${type}`;
+        toast.textContent = msg;
+        elFeed.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 250ms ease';
+          setTimeout(() => toast.remove(), 260);
+        }, 3200);
+        while (elFeed.children.length > 3) {
+          elFeed.firstChild.remove();
+        }
+      }
+
+      function deductPoints(stationIdx, pts, reason) {
+        if (state.finished) return;
+        state.score = Math.max(0, state.score - pts);
+        state.stations[stationIdx].earned = Math.max(0, state.stations[stationIdx].earned - pts);
+        playWhistle('short');
+        notify(`-${pts} pts: ${reason}`, 'warn');
+        updateHud();
+      }
+
+      function triggerFootDown(stationIdx, reason) {
+        if (state.finished) return;
+        state.footDownCount++;
+        state.wobbleTimer = 0.7;
+        if (state.footDownCount >= 2) {
+          triggerInstantFail(`2nd Foot Down (${reason})`);
+        } else {
+          deductPoints(stationIdx, 5, `Foot Down — ${reason}`);
+        }
+      }
+
+      function triggerInstantFail(reason) {
+        if (state.finished) return;
+        state.finished = true;
+        state.failed = true;
+        state.failReason = reason;
+        state.stations[state.currentStation - 1].status = 'Failed';
+        playWhistle('fail');
+        notify(`INSTANT FAIL: ${reason}`, 'fail');
+        openScorecard();
+      }
+
+      function completeTrial() {
+        if (state.finished) return;
+        state.finished = true;
+        state.failed = state.score < 70;
+        notify(state.failed ? 'Trial completed below 70 points.' : 'Trial Passed! Congratulations!', state.failed ? 'fail' : 'good');
+        openScorecard();
+      }
+
+      function openScorecard() {
+        const verdictTitle = document.getElementById('verdict-title');
+        const verdictSub = document.getElementById('verdict-sub');
+        const finalScoreBig = document.getElementById('final-score-big');
+        const rows = document.getElementById('scorecard-rows');
+        const logsEl = document.getElementById('scorecard-logs');
+
+        const passed = !state.failed && state.score >= 70;
+        verdictTitle.textContent = passed ? 'TRIAL PASSED' : 'TRIAL FAILED';
+        verdictTitle.className = `verdict-title ${passed ? 'pass' : 'fail'}`;
+        verdictSub.textContent = state.failReason
+          ? `Disqualification: ${state.failReason}`
+          : passed
+          ? 'You met the Nepal DoTM Category K practical standard (70+ pts).'
+          : 'Score below the 70-point passing threshold.';
+        finalScoreBig.textContent = `${state.score}/100`;
+
+        rows.innerHTML = state.stations
+          .map(
+            (s) => `
+          <tr>
+            <td>${s.name}</td>
+            <td>${s.status}</td>
+            <td class="num">${s.earned} / ${s.max}</td>
+          </tr>`
+          )
+          .join('');
+
+        // Educational "What to Practice Next" coaching summary
+        let coachNote = 'Excellent control! You are ready for the real DoTM Category K practical exam.';
+        if (state.failReason.includes('Figure-8')) {
+          coachNote = 'Practice Tip: Use Figure-8 Drill mode. Keep eyes 2–3m ahead (not at your front tire) and drag the rear brake (S) gently against light throttle.';
+        } else if (state.failReason.includes('Plank')) {
+          coachNote = 'Practice Tip: Use Plank Drill mode. Align straight before the lip, look at the far end of the plank, and hold a steady ~9 km/h.';
+        } else if (state.failReason.includes('Ukalo') || state.failReason.includes('Rolled backward')) {
+          coachNote = 'Practice Tip: Use Ukalo Drill mode. Stop between the yellow lower line and white upper line, hold S (Rear Brake), add W (Throttle) on GO, then release S smoothly.';
+        } else if (state.failReason.includes('Stand')) {
+          coachNote = 'Practice Tip: Build muscle memory for the 1-2-3 pre-ride routine (Helmet -> Mirrors -> Side Stand) before touching the throttle.';
+        } else if (!passed) {
+          coachNote = 'Practice Tip: Review the deductions above and use the Drill modes to practice your weakest station until you consistently score 85+.';
+        }
+
+        logsEl.innerHTML =
+          `<div style="color:#fde68a;font-weight:600;margin-bottom:4px;">${coachNote}</div>` +
+          (state.logs.length
+            ? state.logs.map((l) => `<div>• ${l}</div>`).join('')
+            : '<div>• Clean run with zero deductions.</div>');
+
+        elModal.classList.add('open');
+      }
+
+      const SIM_MODES = [
+        { id: 'full', label: 'Full Trial' },
+        { id: 'fig8', label: 'Figure-8 Drill' },
+        { id: 'plank', label: 'Plank Drill' },
+        { id: 'ukalo', label: 'Ukalo Drill' },
+      ];
+      let simModeIdx = 0;
+
+      const WEATHERS = [
+        { id: 'sunny', label: 'Sunny', sky: 0x8ec0e4, sunInt: 1.55, hemiInt: 0.85, grip: 1.0 },
+        { id: 'monsoon', label: 'Monsoon Wet', sky: 0x64748b, sunInt: 0.75, hemiInt: 0.7, grip: 0.76 },
+        { id: 'dusk', label: 'Evening Dusk', sky: 0x1e293b, sunInt: 0.55, hemiInt: 0.45, grip: 0.95 },
+      ];
+      let weatherIdx = 0;
+
+      function applyWeather() {
+        const w = WEATHERS[weatherIdx];
+        scene.background.setHex(w.sky);
+        scene.fog.color.setHex(w.sky);
+        sunLight.intensity = w.sunInt;
+        hemiLight.intensity = w.hemiInt;
+        document.getElementById('btn-weather').textContent = `Weather: ${w.label}`;
+      }
+
+      const FIG8_CHECKPOINTS = [
+        { x: 3.2, z: 3.3, label: '1/6: Loop South-Right' },
+        { x: 0.0, z: 0.0, label: '2/6: Cross Center to North' },
+        { x: -3.2, z: -3.3, label: '3/6: Loop North-Left' },
+        { x: 3.2, z: -3.3, label: '4/6: Wrap around North-Right' },
+        { x: 0.0, z: 0.0, label: '5/6: Cross Center back to South' },
+        { x: -3.2, z: 3.3, label: '6/6: Wrap South-Left, then Exit!' },
+      ];
+
+      function resetTrial() {
+        const mode = SIM_MODES[simModeIdx].id;
+        state.x = 0;
+        state.z = 14.5;
+        state.y = 0;
+        state.yaw = 0;
+        state.speed = 0;
+        state.steer = 0;
+        state.roll = 0;
+        state.pitch = 0;
+        state.suspY = 0;
+        state.suspVy = 0;
+        state.wobbleTimer = 0;
+        state.blinker = 'none';
+        state.helmetDone = false;
+        state.mirrorsDone = false;
+        state.standUp = false;
+        state.score = 100;
+        state.finished = false;
+        state.failed = false;
+        state.failReason = '';
+        state.startZoneChecked = false;
+        state.currentStation = 1;
+        state.footDownCount = 0;
+        state.fig8Touches = 0;
+        state.fig8TouchCooldown = 0;
+        state.fig8Step = 0;
+        state.plankEntered = false;
+        state.plankCleared = false;
+        state.uturnBlinkerArmed = false;
+        state.uturnEntered = false;
+        state.uturnCleared = false;
+        state.uturnBlinkerCancelChecked = false;
+        state.trafficChecked = false;
+        state.bumpsEntered = false;
+        state.bumpsCleared = false;
+        state.bumpsCooldown = 0;
+        state.ukaloEntered = false;
+        state.ukaloStopped = false;
+        state.ukaloHoldTime = 0;
+        state.ukaloGoGranted = false;
+        state.ukaloStopZ = 0;
+        state.ukaloCleared = false;
+        state.oraloStopped = false;
+        state.oraloHoldTime = 0;
+        state.oraloGoGranted = false;
+        state.logs = [];
+        state.stations.forEach((s, idx) => {
+          s.earned = s.max;
+          s.status = idx === 0 ? 'Active' : 'Pending';
+        });
+
+        // Apply Drill Mode spawn if not Full Trial
+        if (mode === 'fig8') {
+          state.x = 0;
+          state.z = 8.4;
+          state.yaw = 0;
+          state.helmetDone = state.mirrorsDone = state.standUp = state.startZoneChecked = true;
+          state.currentStation = 2;
+          state.stations[0].status = 'Cleared';
+          state.stations[1].status = 'Active';
+        } else if (mode === 'plank') {
+          state.x = 0;
+          state.z = -9.6;
+          state.yaw = 0;
+          state.helmetDone = state.mirrorsDone = state.standUp = state.startZoneChecked = true;
+          state.fig8Step = 6;
+          state.currentStation = 3;
+          state.stations[0].status = state.stations[1].status = 'Cleared';
+          state.stations[2].status = 'Active';
+        } else if (mode === 'ukalo') {
+          state.x = COURSE.returnX;
+          state.z = 0.6;
+          state.yaw = Math.PI;
+          state.helmetDone = state.mirrorsDone = state.standUp = state.startZoneChecked = true;
+          state.currentStation = 7;
+          for (let i = 0; i < 6; i++) state.stations[i].status = 'Cleared';
+          state.stations[6].status = 'Active';
+        }
+
+        // Reset visual helmet, mirrors, kickstand & Ukalo judge paddle
+        helmetGroup.position.set(state.helmetDone ? 0 : 0.34, state.helmetDone ? 1.46 : 1.02, state.helmetDone ? 0.28 : 0.05);
+        helmetGroup.rotation.set(state.helmetDone ? 0 : 0.35, state.helmetDone ? 0 : 0.4, state.helmetDone ? 0 : -0.3);
+        visorPivot.rotation.x = state.helmetDone ? 0 : -0.95;
+        mirrorPivotL.rotation.set(state.mirrorsDone ? 0 : 0.45, state.mirrorsDone ? 0 : -0.5, state.mirrorsDone ? 0 : 0.65);
+        mirrorPivotR.rotation.set(state.mirrorsDone ? 0 : 0.45, state.mirrorsDone ? 0 : 0.5, state.mirrorsDone ? 0 : -0.65);
+        matMirrorGlass.emissiveIntensity = 0.1;
+        kickstandPivot.rotation.x = state.standUp ? -1.48 : 0;
+        riderLeftLegPivot.rotation.x = 0;
+        state.roll = state.standUp ? 0 : 0.12;
+        ukaloLightMat.emissive.setHex(0xef4444);
+        oraloLightMat.emissive.setHex(0xef4444);
+        if (ukaloPaddleMat) {
+          ukaloPaddleMat.color.setHex(0xef4444);
+          ukaloPaddleMat.emissive.setHex(0xef4444);
+        }
+        elUkaloBanner.style.display = 'none';
+        elModal.classList.remove('open');
+        elFeed.innerHTML = '';
+        if (mode === 'full') {
+          notify('DoTM Examiner: Complete Pre-Ride Checklist (1 Helmet, 2 Mirrors, 3 Stand) before moving.', 'info');
+        } else {
+          notify(`${SIM_MODES[simModeIdx].label} active — focus on mastering this station!`, 'info');
+        }
+        updateHud();
+      }
+
+      // Checklist actions
+      function doChecklist(num) {
+        if (state.finished) return;
+        if (Math.abs(state.speed) > 0.25) {
+          notify('Stop completely to perform pre-ride checks.', 'warn');
+          return;
+        }
+        if (num === 1 && !state.helmetDone) {
+          state.helmetDone = true;
+          notify('Helmet strap buckled.', 'good');
+        } else if (num === 2 && !state.mirrorsDone) {
+          state.mirrorsDone = true;
+          notify('Left & Right mirrors adjusted.', 'good');
+        } else if (num === 3 && !state.standUp) {
+          state.standUp = true;
+          notify('Side stand kicked up. Ready to roll!', 'good');
+        }
+        updateHud();
+      }
+
+      function toggleBlinker(side) {
+        state.blinker = state.blinker === side ? 'none' : side;
+        updateHud();
+      }
+
+      function toggleCamera() {
+        const order = ['chase', 'sightline', 'firstperson'];
+        const labels = {
+          chase: 'Cam: Chase (C)',
+          sightline: 'Cam: Sightline (C)',
+          firstperson: 'Cam: 1st Person (C)',
+        };
+        const names = {
+          chase: 'Standard Chase Cam',
+          sightline: 'Rider Sightline Cam',
+          firstperson: 'First-Person Rider POV',
+        };
+        const nextIdx = (order.indexOf(state.cameraMode) + 1) % order.length;
+        state.cameraMode = order[nextIdx];
+        elBtnCam.textContent = labels[state.cameraMode];
+        const showRider = state.cameraMode !== 'firstperson';
+        riderHead.visible = showRider;
+        riderHair.visible = showRider;
+        helmetGroup.visible = showRider;
+        riderTorso.visible = showRider;
+        riderBib.visible = showRider;
+        document.getElementById('visor-overlay').classList.toggle('active', !showRider && state.helmetDone);
+        camera.fov = state.cameraMode === 'firstperson' ? 72 : 56;
+        camera.updateProjectionMatrix();
+        notify(`Camera switched to ${names[state.cameraMode]}`, 'info');
+      }
+
+      function toggleSightlines() {
+        state.showSightlines = !state.showSightlines;
+        sightlineGroup.visible = state.showSightlines;
+        elBtnMarkers.textContent = `Sightlines: ${state.showSightlines ? 'On' : 'Off'}`;
+      }
+
+      // Event Listeners
+      renderer.domElement.addEventListener('pointerdown', () => {
+        window.focus();
+        ensureAudio();
+      });
+
+      window.addEventListener('keydown', (e) => {
+        ensureAudio();
+        if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+          e.preventDefault();
+        }
+        keys[e.code] = true;
+        if (e.repeat) return;
+        if (e.code === 'Digit1') doChecklist(1);
+        if (e.code === 'Digit2') doChecklist(2);
+        if (e.code === 'Digit3') doChecklist(3);
+        if (e.code === 'KeyQ') toggleBlinker('left');
+        if (e.code === 'KeyE') toggleBlinker('right');
+        if (e.code === 'KeyC') toggleCamera();
+        if (e.code === 'KeyM') toggleSightlines();
+        if (e.code === 'KeyT') toggleTipsModal();
+        if (e.code === 'KeyR') resetTrial();
+      });
+
+      window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+      });
+
+      elChk1.addEventListener('click', () => doChecklist(1));
+      elChk2.addEventListener('click', () => doChecklist(2));
+      elChk3.addEventListener('click', () => doChecklist(3));
+      elBlinkL.addEventListener('click', () => toggleBlinker('left'));
+      elBlinkR.addEventListener('click', () => toggleBlinker('right'));
+      // Selectable Nepali Trial Scooters (distinct color + handling feel)
+      const SCOOTERS = [
+        { name: 'Dio 110', color: 0xe11d48, accel: 3.8, maxSteer: 0.56, note: 'Light & agile (most common in Nepal trials)' },
+        { name: 'Ntorq 125', color: 0xeab308, accel: 4.3, maxSteer: 0.54, note: 'Punchier 125cc CVT torque for Ukalo ramp' },
+        { name: 'RayZR 125', color: 0x06b6d4, accel: 4.0, maxSteer: 0.58, note: 'Sharp steering lock for tight Figure-8 turns' },
+        { name: 'Vespa 125', color: 0x10b981, accel: 3.6, maxSteer: 0.55, note: 'Smooth, steady low-speed balance on plank' },
+      ];
+      let scooterIdx = 0;
+      const elBtnScooter = document.getElementById('btn-scooter');
+      elBtnScooter.addEventListener('click', () => {
+        scooterIdx = (scooterIdx + 1) % SCOOTERS.length;
+        const sc = SCOOTERS[scooterIdx];
+        matBody.color.setHex(sc.color);
+        elBtnScooter.textContent = `Scooter: ${sc.name}`;
+        notify(`Switched to ${sc.name} — ${sc.note}`, 'info');
+      });
+
+      const elTipsModal = document.getElementById('tips-modal');
+      function toggleTipsModal(force) {
+        const open = typeof force === 'boolean' ? force : !elTipsModal.classList.contains('open');
+        elTipsModal.classList.toggle('open', open);
+      }
+      document.getElementById('btn-tips').addEventListener('click', () => toggleTipsModal(true));
+      document.getElementById('tips-close-btn').addEventListener('click', () => toggleTipsModal(false));
+      document.getElementById('tips-ok-btn').addEventListener('click', () => toggleTipsModal(false));
+
+      document.getElementById('btn-mode').addEventListener('click', () => {
+        simModeIdx = (simModeIdx + 1) % SIM_MODES.length;
+        document.getElementById('btn-mode').textContent = `Mode: ${SIM_MODES[simModeIdx].label}`;
+        resetTrial();
+      });
+
+      document.getElementById('btn-weather').addEventListener('click', () => {
+        weatherIdx = (weatherIdx + 1) % WEATHERS.length;
+        applyWeather();
+        notify(`Weather set to ${WEATHERS[weatherIdx].label}`, 'info');
+      });
+
+      elBtnCam.addEventListener('click', toggleCamera);
+      elBtnMarkers.addEventListener('click', toggleSightlines);
+      const elBtnAudio = document.getElementById('btn-audio');
+      elBtnAudio.addEventListener('click', () => {
+        audioEnabled = !audioEnabled;
+        elBtnAudio.textContent = `Audio: ${audioEnabled ? 'On' : 'Off'}`;
+        if (!audioEnabled && engineGain) engineGain.gain.value = 0;
+        if (audioEnabled) ensureAudio();
+      });
+      document.getElementById('btn-restart').addEventListener('click', resetTrial);
+      document.getElementById('modal-restart-btn').addEventListener('click', resetTrial);
+
+      const dockWrapper = document.getElementById('dock-wrapper');
+      const dockToggle = document.getElementById('dock-toggle');
+      dockToggle.addEventListener('click', () => {
+        const collapsed = dockWrapper.classList.toggle('collapsed');
+        dockToggle.textContent = collapsed ? 'Show HUD' : 'Hide HUD';
+      });
+
+      // =========================================================================
+      // 6. HUD UPDATER
+      // =========================================================================
+      const stationHints = {
+        1: 'Coach: Press 1 (Helmet), 2 (Mirrors), 3 (Side Stand) before rolling',
+        2: 'Coach: Look ahead at the green ring · Drag Rear Brake (S) gently for balance',
+        3: 'Coach: Align straight before lip · Eyes on far end · Keep steady 8–10 km/h',
+        4: 'Coach: Turn ON Right Blinker (E) after plank · Cancel it after exiting',
+        5: 'Coach: Stop behind white line on Red/Yellow · Cross smoothly on Green',
+        6: 'Coach: Cross all 4 bumps under 12 km/h · Never grab Front Brake (Space)',
+        7: 'Coach: Stop between yellow & white ramp lines · Hold 2s · Pre-load S+W on GO',
+      };
+
+      function updateHud() {
+        elScore.textContent = `${state.score}/100`;
+        elScore.className = `score-value ${state.score >= 85 ? 'pass' : state.score >= 70 ? 'warn' : 'fail'}`;
+        elStation.textContent = state.stations[state.currentStation - 1].name;
+        elStationSub.textContent = stationHints[state.currentStation];
+
+        elChk1.classList.toggle('done', state.helmetDone);
+        elChk2.classList.toggle('done', state.mirrorsDone);
+        elChk3.classList.toggle('done', state.standUp);
+        elBlinkL.classList.toggle('active', state.blinker === 'left');
+        elBlinkR.classList.toggle('active', state.blinker === 'right');
+      }
+
+      // =========================================================================
+      // 7. PHYSICS & STATION RULE EVALUATION
+      // =========================================================================
+      const _camPos = new THREE.Vector3();
+      const _camLook = new THREE.Vector3();
+
+      function stepPhysics(dt) {
+        if (state.finished) return;
+
+        // 1. Helmet wearing animation (moves smoothly from lap onto head + visor snaps down)
+        const targetHelmetX = state.helmetDone ? 0 : 0.34;
+        const targetHelmetY = state.helmetDone ? 1.46 : 1.02;
+        const targetHelmetZ = state.helmetDone ? 0.28 : 0.05;
+        helmetGroup.position.x = THREE.MathUtils.damp(helmetGroup.position.x, targetHelmetX, 7, dt);
+        helmetGroup.position.y = THREE.MathUtils.damp(helmetGroup.position.y, targetHelmetY, 7, dt);
+        helmetGroup.position.z = THREE.MathUtils.damp(helmetGroup.position.z, targetHelmetZ, 7, dt);
+        helmetGroup.rotation.x = THREE.MathUtils.damp(helmetGroup.rotation.x, state.helmetDone ? 0 : 0.35, 7, dt);
+        helmetGroup.rotation.y = THREE.MathUtils.damp(helmetGroup.rotation.y, state.helmetDone ? 0 : 0.4, 7, dt);
+        helmetGroup.rotation.z = THREE.MathUtils.damp(helmetGroup.rotation.z, state.helmetDone ? 0 : -0.3, 7, dt);
+        visorPivot.rotation.x = THREE.MathUtils.damp(visorPivot.rotation.x, state.helmetDone ? 0 : -0.95, 6, dt);
+
+        // 2. Mirrors adjustment animation (tilts on all axes + brief glass glint)
+        mirrorPivotL.rotation.x = THREE.MathUtils.damp(mirrorPivotL.rotation.x, state.mirrorsDone ? 0 : 0.45, 8, dt);
+        mirrorPivotL.rotation.y = THREE.MathUtils.damp(mirrorPivotL.rotation.y, state.mirrorsDone ? 0 : -0.5, 8, dt);
+        mirrorPivotL.rotation.z = THREE.MathUtils.damp(mirrorPivotL.rotation.z, state.mirrorsDone ? 0 : 0.65, 8, dt);
+        mirrorPivotR.rotation.x = THREE.MathUtils.damp(mirrorPivotR.rotation.x, state.mirrorsDone ? 0 : 0.45, 8, dt);
+        mirrorPivotR.rotation.y = THREE.MathUtils.damp(mirrorPivotR.rotation.y, state.mirrorsDone ? 0 : 0.5, 8, dt);
+        mirrorPivotR.rotation.z = THREE.MathUtils.damp(mirrorPivotR.rotation.z, state.mirrorsDone ? 0 : -0.65, 8, dt);
+        const targetGlint = state.mirrorsDone && Math.abs(mirrorPivotL.rotation.z) > 0.04 ? 1.4 : 0.15;
+        matMirrorGlass.emissiveIntensity = THREE.MathUtils.damp(matMirrorGlass.emissiveIntensity, targetGlint, 6, dt);
+
+        // 3. Side Stand kick-up animation (kickstand rotates up + rider left leg kicks back)
+        const targetStand = state.standUp ? -1.48 : 0;
+        kickstandPivot.rotation.x = THREE.MathUtils.damp(kickstandPivot.rotation.x, targetStand, 10, dt);
+        const legKickTarget = state.standUp && Math.abs(kickstandPivot.rotation.x - targetStand) > 0.12 ? 0.65 : 0;
+        riderLeftLegPivot.rotation.x = THREE.MathUtils.damp(riderLeftLegPivot.rotation.x, legKickTarget, 12, dt);
+
+        // Traffic Light cycle (Red 6s -> Green 7s -> Yellow 2.5s)
+        state.tlTimer = (state.tlTimer + dt) % 15.5;
+        if (state.tlTimer < 6.0) {
+          state.tlPhase = 'red';
+          tlRedMat.emissiveIntensity = 1.9;
+          tlYellowMat.emissiveIntensity = 0.05;
+          tlGreenMat.emissiveIntensity = 0.05;
+        } else if (state.tlTimer < 13.0) {
+          state.tlPhase = 'green';
+          tlRedMat.emissiveIntensity = 0.05;
+          tlYellowMat.emissiveIntensity = 0.05;
+          tlGreenMat.emissiveIntensity = 1.9;
+        } else {
+          state.tlPhase = 'yellow';
+          tlRedMat.emissiveIntensity = 0.05;
+          tlYellowMat.emissiveIntensity = 1.9;
+          tlGreenMat.emissiveIntensity = 0.05;
+        }
+
+        // Inputs
+        const throttle = keys['KeyW'] || keys['ArrowUp'] ? 1 : 0;
+        const rearBrake = keys['KeyS'] || keys['ArrowDown'] ? 1 : 0;
+        const frontBrake = keys['Space'] ? 1 : 0;
+        const steerIn = (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0) - (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0);
+
+        // Steering dynamics + subtle low-speed handlebar wobble when coasting slowly
+        const activeScooter = SCOOTERS[scooterIdx];
+        const maxSteer = activeScooter.maxSteer;
+        let targetSteer = steerIn * maxSteer;
+        if (throttle === 0 && Math.abs(state.speed) > 0.25 && Math.abs(state.speed) < 1.3) {
+          targetSteer += Math.sin(performance.now() * 0.011) * 0.045;
+        }
+        if (state.wobbleTimer > 0) {
+          state.wobbleTimer = Math.max(0, state.wobbleTimer - dt);
+          targetSteer += Math.sin(performance.now() * 0.03) * 0.14;
+        }
+        const steerLambda = steerIn !== 0 ? 7.5 : 11.0;
+        state.steer = THREE.MathUtils.damp(state.steer, targetSteer, steerLambda, dt);
+
+        // Compute front & rear wheel world positions
+        const fx = state.x - Math.sin(state.yaw) * (WHEELBASE / 2);
+        const fz = state.z - Math.cos(state.yaw) * (WHEELBASE / 2);
+        const rx = state.x + Math.sin(state.yaw) * (WHEELBASE / 2);
+        const rz = state.z + Math.cos(state.yaw) * (WHEELBASE / 2);
+
+        const fy = groundHeightAt(fx, fz);
+        const ry = groundHeightAt(rx, rz);
+        const slopeSin = (fy - ry) / WHEELBASE; // positive when going uphill
+        const slopeDeg = Math.asin(THREE.MathUtils.clamp(slopeSin, -0.5, 0.5)) * (180 / Math.PI);
+
+        // Longitudinal forces (CVT throttle, rear brake, front brake, gravity on slope)
+        let accel = 0;
+        if (throttle > 0) {
+          accel += activeScooter.accel * (1 - Math.min(state.speed / 7.5, 0.85)); // smooth CVT up to ~27 km/h
+        }
+        // Gravity along slope
+        accel -= 9.81 * slopeSin;
+
+        // Rolling resistance
+        accel -= state.speed * 0.32;
+
+        // Apply brakes (oppose motion, or hold stationary against gravity; reduced slightly in Monsoon Wet)
+        const grip = WEATHERS[weatherIdx].grip;
+        const totalBrake = (rearBrake * 5.2 + frontBrake * 7.8) * grip;
+        if (Math.abs(state.speed) > 0.05) {
+          accel -= Math.sign(state.speed) * totalBrake;
+        } else if (totalBrake > 0 && Math.abs(accel) < totalBrake) {
+          // Held firmly by brake (e.g. rear brake holding on Ukalo!)
+          accel = 0;
+          state.speed = 0;
+        }
+
+        // Prevent accidental reverse unless gravity pulls back on ramp
+        state.speed += accel * dt;
+        if (slopeSin <= 0.02 && state.speed < 0) {
+          state.speed = 0;
+        }
+        state.speed = THREE.MathUtils.clamp(state.speed, -2.5, 7.8);
+
+        // Two-wheel bicycle kinematic yaw & translation
+        const yawRate = (state.speed / WHEELBASE) * Math.tan(state.steer);
+        state.yaw += yawRate * dt;
+        state.x -= Math.sin(state.yaw) * state.speed * dt;
+        state.z -= Math.cos(state.yaw) * state.speed * dt;
+
+        // Re-evaluate wheel heights after move for suspension bounce
+        const newFx = state.x - Math.sin(state.yaw) * (WHEELBASE / 2);
+        const newFz = state.z - Math.cos(state.yaw) * (WHEELBASE / 2);
+        const newRx = state.x + Math.sin(state.yaw) * (WHEELBASE / 2);
+        const newRz = state.z + Math.cos(state.yaw) * (WHEELBASE / 2);
+        const newFy = groundHeightAt(newFx, newFz);
+        const newRy = groundHeightAt(newRx, newRz);
+        const targetGroundY = (newFy + newRy) / 2;
+
+        // Spring-damper suspension bounce
+        const dy = targetGroundY - state.y;
+        state.suspVy += (dy * 120 - state.suspVy * 14) * dt;
+        state.y += state.suspVy * dt;
+        if (Math.abs(targetGroundY - state.y) > 0.25) state.y = targetGroundY;
+
+        // Roll (lean into turn, or slight parked lean on left side stand when stationary)
+        const parkedLean = !state.standUp && Math.abs(state.speed) < 0.1 ? 0.12 : 0;
+        const targetRoll = parkedLean || THREE.MathUtils.clamp(state.steer * state.speed * 0.14, -0.42, 0.42);
+        state.roll = THREE.MathUtils.damp(state.roll, targetRoll, 8, dt);
+
+        const slopePitch = Math.atan2(newFy - newRy, WHEELBASE);
+        const brakeDive = frontBrake && state.speed > 0.4 ? -0.14 : 0;
+        state.pitch = THREE.MathUtils.damp(state.pitch, slopePitch + brakeDive, 10, dt);
+
+        // Update 3D scooter transforms
+        scooterRoot.position.set(state.x, Math.max(0, state.y), state.z);
+        scooterRoot.rotation.y = state.yaw;
+        scooterTiltGroup.rotation.z = state.roll;
+        scooterTiltGroup.rotation.x = state.pitch;
+        steerGroup.rotation.y = state.steer;
+
+        const wheelSpin = (state.speed * dt) / WHEEL_R;
+        frontWheel.rotation.x -= wheelSpin;
+        rearWheel.rotation.x -= wheelSpin;
+
+        // Blinker flashing
+        const blinkOn = Math.floor(performance.now() / 360) % 2 === 0;
+        matBlinkL.emissiveIntensity = state.blinker === 'left' && blinkOn ? 2.2 : 0;
+        matBlinkR.emissiveIntensity = state.blinker === 'right' && blinkOn ? 2.2 : 0;
+
+        // Update Speed & Balance HUD
+        const kmh = Math.abs(state.speed) * 3.6;
+        elSpeed.textContent = Math.round(kmh);
+        elSlope.textContent = `Slope ${Math.round(slopeDeg)}°`;
+        const balancePct = 50 - (state.roll / 0.42) * 42;
+        elBalanceMarker.style.left = `${THREE.MathUtils.clamp(balancePct, 8, 92)}%`;
+
+        // Update CVT engine hum pitch
+        if (audioEnabled && engineOsc && engineGain) {
+          engineOsc.frequency.value = 56 + kmh * 3.8 + throttle * 14;
+          engineGain.gain.value = 0.016 + throttle * 0.016;
+        }
+
+        // Animate Traffic Police Judges (track scooter & wave on Ukalo GO)
+        const nowSec = performance.now() * 0.001;
+        for (let i = 0; i < judges.length; i++) {
+          const j = judges[i];
+          const dx = state.x - j.group.position.x;
+          const dz = state.z - j.group.position.z;
+          if (Math.hypot(dx, dz) < 16) {
+            const targetYaw = Math.atan2(dx, dz);
+            j.group.rotation.y = THREE.MathUtils.damp(j.group.rotation.y, targetYaw, 4, dt);
+          }
+          if (j.hasPaddle) {
+            j.rightArmPivot.rotation.z = state.ukaloGoGranted
+              ? 2.5 + Math.sin(nowSec * 9) * 0.35
+              : 2.65;
+          } else if (i === 0 && state.standUp && state.currentStation === 1) {
+            j.rightArmPivot.rotation.z = 2.2 + Math.sin(nowSec * 6) * 0.3;
+          } else {
+            j.rightArmPivot.rotation.z = THREE.MathUtils.damp(j.rightArmPivot.rotation.z, 0.15, 5, dt);
+          }
+        }
+
+        // Evaluate Station Rules
+        evaluateStations(dt, newFx, newFz, newRx, newRz, frontBrake, kmh);
+      }
+
+      function evaluateStations(dt, fx, fz, rx, rz, frontBrake, kmh) {
+        // --- STATION 1: START ZONE ---
+        if (state.currentStation === 1 && !state.startZoneChecked && state.speed > 0.35) {
+          state.startZoneChecked = true;
+          if (!state.standUp) {
+            triggerInstantFail('Moved scooter with Side Stand down (Press 3 first).');
+            return;
+          }
+          if (!state.helmetDone) deductPoints(0, 4, 'Started without buckling Helmet (Key 1)');
+          if (!state.mirrorsDone) deductPoints(0, 3, 'Started without adjusting Mirrors (Key 2)');
+          if (state.helmetDone && state.mirrorsDone) {
+            notify('Start Zone cleared cleanly!', 'good');
+          }
+          state.stations[0].status = 'Cleared';
+          state.currentStation = 2;
+          state.stations[1].status = 'Active';
+          updateHud();
+        }
+
+        // --- STATION 2: FIGURE-8 TRACK ---
+        if (state.currentStation === 2) {
+          if (state.fig8TouchCooldown > 0) state.fig8TouchCooldown -= dt;
+
+          // Front brake while leaning in Figure-8 -> Foot Down
+          if (frontBrake && Math.abs(state.roll) > 0.14 && state.fig8TouchCooldown <= 0) {
+            state.fig8TouchCooldown = 1.4;
+            triggerFootDown(1, 'Grabbed Front Brake while leaning in Figure-8');
+            return;
+          }
+
+          // Update 3D Figure-8 Checkpoint Beacon
+          if (state.fig8Step < FIG8_CHECKPOINTS.length) {
+            const cp = FIG8_CHECKPOINTS[state.fig8Step];
+            fig8Beacon.visible = true;
+            fig8Beacon.position.set(cp.x, 1.0 + Math.sin(performance.now() * 0.005) * 0.14, cp.z);
+            fig8Beacon.rotation.y += dt * 2.2;
+          } else {
+            fig8Beacon.visible = false;
+          }
+
+          const inFig8Zone = state.z < 7.8 && state.z > -7.8 && Math.abs(state.x) < 6.0;
+          if (inFig8Zone) {
+            // Mandatory WHOLE Figure-8 (6 ordered checkpoints around both islands)
+            if (state.fig8Step < FIG8_CHECKPOINTS.length) {
+              const cp = FIG8_CHECKPOINTS[state.fig8Step];
+              if (Math.hypot(state.x - cp.x, state.z - cp.z) < 1.85) {
+                state.fig8Step++;
+                if (state.fig8Step < FIG8_CHECKPOINTS.length) {
+                  elStationSub.textContent = `Whole Figure-8 (${FIG8_CHECKPOINTS[state.fig8Step].label})`;
+                } else {
+                  elStationSub.textContent = 'Whole Figure-8 Complete (6/6)! Exit North to Narrow Plank';
+                  notify('Whole Figure-8 completed! Exit straight to Narrow Plank.', 'good');
+                }
+              }
+            }
+
+            const wheels = [
+              [fx, fz],
+              [rx, rz],
+            ];
+            for (const [wx, wz] of wheels) {
+              const inEntryExit = Math.abs(wx) <= 1.32 && (wz >= 6.6 || wz <= -6.6);
+              if (inEntryExit) continue;
+              const dS = Math.hypot(wx - COURSE.fig8South.x, wz - COURSE.fig8South.z);
+              const dN = Math.hypot(wx - COURSE.fig8North.x, wz - COURSE.fig8North.z);
+
+              // Completely exited outer boundary
+              if (Math.min(dS, dN) > COURSE.fig8Rout + 0.35) {
+                triggerInstantFail('Exited Figure-8 outer boundary.');
+                return;
+              }
+
+              const inSouthLane = dS >= COURSE.fig8Rin + 0.08 && dS <= COURSE.fig8Rout - 0.08;
+              const inNorthLane = dN >= COURSE.fig8Rin + 0.08 && dN <= COURSE.fig8Rout - 0.08;
+
+              if (!inSouthLane && !inNorthLane && state.fig8TouchCooldown <= 0) {
+                state.fig8Touches++;
+                state.fig8TouchCooldown = 1.6;
+                state.wobbleTimer = 0.6;
+                if (state.fig8Touches >= 2) {
+                  triggerInstantFail('Touched Figure-8 yellow boundary line twice.');
+                  return;
+                } else {
+                  deductPoints(1, 5, 'Touched Figure-8 yellow line (1st warning)');
+                }
+              }
+            }
+          }
+
+          // Exited Figure-8 toward Narrow Plank — MUST have completed ALL 6 checkpoints of the whole 8!
+          if (state.z < -8.8) {
+            if (state.fig8Step < FIG8_CHECKPOINTS.length) {
+              triggerInstantFail(`Incomplete Figure-8 (${state.fig8Step}/6 checkpoints). You must complete a whole 8!`);
+              return;
+            }
+            fig8Beacon.visible = false;
+            notify('Whole Figure-8 Track cleared!', 'good');
+            state.stations[1].status = 'Cleared';
+            if (SIM_MODES[simModeIdx].id === 'fig8') {
+              completeTrial();
+              return;
+            }
+            state.currentStation = 3;
+            state.stations[2].status = 'Active';
+            updateHud();
+          }
+        }
+
+        // --- STATION 3: NARROW PLANK ---
+        if (state.currentStation === 3) {
+          const onPlank = state.z <= COURSE.plankZStart && state.z >= COURSE.plankZEnd;
+          if (onPlank) {
+            if (Math.abs(state.x) < 0.35) {
+              state.plankEntered = true;
+            }
+            if (Math.abs(fx) > 0.21 || Math.abs(rx) > 0.21) {
+              triggerInstantFail('Wheel dropped off the Narrow Plank.');
+              return;
+            }
+            if (state.speed < 0.15) {
+              triggerInstantFail('Stopped mid-plank.');
+              return;
+            }
+            if (frontBrake && state.fig8TouchCooldown <= 0) {
+              state.fig8TouchCooldown = 1.4;
+              triggerFootDown(2, 'Pulled Front Brake on Narrow Plank');
+              return;
+            }
+          }
+          if (!state.plankEntered && state.z < COURSE.plankZEnd) {
+            triggerInstantFail('Bypassed the Narrow Plank.');
+            return;
+          }
+          if (state.plankEntered && state.z < COURSE.plankZEnd - 0.5) {
+            state.plankCleared = true;
+            state.stations[2].status = 'Cleared';
+            state.currentStation = 4;
+            state.stations[3].status = 'Active';
+            notify('Narrow Plank cleared! Turn ON Right Blinker (E) before U-Turn.', 'good');
+            updateHud();
+          }
+        }
+
+        // --- STATION 4: U-TURN CORRIDOR ---
+        if (state.currentStation === 4) {
+          // Arm blinker between plank exit and U-turn entry
+          if (state.z <= COURSE.plankZEnd - 0.3 && state.z >= COURSE.uturnCenter.z && state.x < 2.0) {
+            if (state.blinker === 'right') {
+              state.uturnBlinkerArmed = true;
+            }
+          }
+
+          // Entering U-turn arc
+          if (state.z < COURSE.uturnCenter.z) {
+            if (!state.uturnEntered) {
+              state.uturnEntered = true;
+              if (!state.uturnBlinkerArmed) {
+                deductPoints(3, 10, 'Missed Right Blinker (E) before entering U-Turn');
+              } else {
+                notify('Right Blinker detected for U-Turn!', 'good');
+              }
+            }
+
+            // Boundary check in U-turn arc
+            const wheels = [
+              [fx, fz],
+              [rx, rz],
+            ];
+            for (const [wx, wz] of wheels) {
+              if (wz < COURSE.uturnCenter.z) {
+                const dU = Math.hypot(wx - COURSE.uturnCenter.x, wz - COURSE.uturnCenter.z);
+                if (dU < COURSE.uturnRin - 0.05 || dU > COURSE.uturnRout + 0.05) {
+                  triggerInstantFail('Touched U-Turn yellow boundary line.');
+                  return;
+                }
+              }
+            }
+          }
+
+          // Bypass check for U-Turn
+          if (!state.uturnEntered && state.x > 5.0) {
+            triggerInstantFail('Bypassed the U-Turn Corridor.');
+            return;
+          }
+
+          // Exited U-turn onto return straight
+          if (state.uturnEntered && state.z > -20.5 && state.x > 6.5) {
+            state.uturnCleared = true;
+            state.stations[3].status = 'Cleared';
+            state.currentStation = 5;
+            state.stations[4].status = 'Active';
+            if (state.blinker !== 'none') {
+              notify('U-Turn cleared! Cancel your blinker (E) before the Traffic Light.', 'info');
+            } else {
+              notify('U-Turn cleared cleanly!', 'good');
+            }
+            updateHud();
+          }
+        }
+
+        // --- STATION 5: TRAFFIC LIGHT ---
+        if (state.currentStation === 5) {
+          // Enforce canceling blinker after U-Turn
+          if (!state.uturnBlinkerCancelChecked && state.z > -16.0) {
+            state.uturnBlinkerCancelChecked = true;
+            if (state.blinker !== 'none') {
+              deductPoints(3, 5, 'Forgot to cancel Blinker after exiting U-Turn');
+            }
+          }
+
+          if (!state.trafficChecked && fz > COURSE.trafficStopZ) {
+            if (Math.abs(state.x - COURSE.returnX) > 2.2) {
+              triggerInstantFail('Left lane to bypass Traffic Light.');
+              return;
+            }
+            state.trafficChecked = true;
+            if (state.tlPhase === 'red' || state.tlPhase === 'yellow') {
+              deductPoints(4, 15, `Crossed Traffic Stop Line on ${state.tlPhase.toUpperCase()} light`);
+            } else {
+              notify('Traffic Light cleared on GREEN!', 'good');
+            }
+            state.stations[4].status = 'Cleared';
+            state.currentStation = 6;
+            state.stations[5].status = 'Active';
+            updateHud();
+          }
+        }
+
+        // --- STATION 6: SPEEDBREAKERS ---
+        if (state.currentStation === 6) {
+          if (state.bumpsCooldown > 0) state.bumpsCooldown -= dt;
+          const inBumps = state.z > -7.2 && state.z < -0.8 && Math.abs(state.x - COURSE.returnX) < 2.2;
+          if (inBumps) {
+            state.bumpsEntered = true;
+            if (state.bumpsCooldown <= 0) {
+              if (kmh > 12.5) {
+                state.bumpsCooldown = 1.6;
+                triggerFootDown(5, 'Hit Speedbreakers too fast (>12 km/h)');
+                return;
+              }
+              if (frontBrake) {
+                state.bumpsCooldown = 1.6;
+                triggerFootDown(5, 'Pulled Front Brake on Speedbreakers');
+                return;
+              }
+            }
+          }
+          if (!state.bumpsEntered && state.z > -0.5) {
+            triggerInstantFail('Bypassed the Speedbreakers.');
+            return;
+          }
+          if (state.bumpsEntered && state.z > 0.2) {
+            state.bumpsCleared = true;
+            state.stations[5].status = 'Cleared';
+            state.currentStation = 7;
+            state.stations[6].status = 'Active';
+            notify('Speedbreakers cleared! Approach Ukalo Ramp and stop before the white line.', 'good');
+            updateHud();
+          }
+        }
+
+        // --- STATION 7: RAMP / UKALO ---
+        if (state.currentStation === 7) {
+          if (state.z > 4.0 && Math.abs(state.x - COURSE.returnX) > 2.2) {
+            triggerInstantFail('Left lane to bypass Ukalo Ramp.');
+            return;
+          }
+          const onUpSlope = state.z >= COURSE.rampZUpStart && state.z <= COURSE.rampZUpEnd;
+          if (onUpSlope) {
+            state.ukaloEntered = true;
+
+            // Crossed stop line without waiting for GO
+            if (!state.ukaloGoGranted && fz > COURSE.rampZStopLine + 0.12) {
+              triggerInstantFail('Crossed Ukalo Stop Line before Examiner GO signal.');
+              return;
+            }
+
+            // Stopped too low (before the lower yellow stop-box line)
+            if (!state.ukaloGoGranted && state.z < COURSE.rampZStopMin && Math.abs(state.speed) < 0.08) {
+              elUkaloBanner.style.display = 'block';
+              elUkaloBanner.classList.remove('go');
+              elUkaloBanner.textContent = 'PULL UP: Enter between Yellow (lower) & White (upper) lines';
+            }
+
+            // Stopped cleanly inside the Ukalo Stop Box [rampZStopMin, rampZStopLine]
+            if (!state.ukaloGoGranted && state.z >= COURSE.rampZStopMin && fz <= COURSE.rampZStopLine + 0.12) {
+              if (Math.abs(state.speed) < 0.08) {
+                if (!state.ukaloStopped) {
+                  state.ukaloStopped = true;
+                  state.ukaloStopZ = state.z;
+                }
+                state.ukaloHoldTime += dt;
+                const rem = Math.max(0, 2.0 - state.ukaloHoldTime);
+                elUkaloBanner.style.display = 'block';
+                elUkaloBanner.classList.remove('go');
+                elUkaloBanner.textContent = `UKALO HOLD: ${rem.toFixed(1)}s (Keep Rear Brake S held)`;
+                if (state.ukaloHoldTime >= 2.0) {
+                  state.ukaloGoGranted = true;
+                  ukaloLightMat.emissive.setHex(0x10b981);
+                  if (ukaloPaddleMat) {
+                    ukaloPaddleMat.color.setHex(0x10b981);
+                    ukaloPaddleMat.emissive.setHex(0x10b981);
+                  }
+                  playWhistle('go');
+                  elUkaloBanner.classList.add('go');
+                  elUkaloBanner.textContent = 'TRAFFIC POLICE: GO! Hold S + W, then release S smoothly';
+                  notify('Traffic Police Judge signals GO! Pre-load Throttle (W) against Rear Brake (S), then release S.', 'good');
+                }
+              }
+            }
+
+            // Rollback check (> 6 inches / 0.15m backward after stopping)
+            if (state.ukaloStopped && state.z < state.ukaloStopZ - 0.15) {
+              elUkaloBanner.style.display = 'none';
+              triggerInstantFail('Rolled backward more than 6 inches (0.15m) on Ukalo Ramp.');
+              return;
+            }
+          }
+
+          if (state.z > COURSE.rampZUpEnd && state.z < COURSE.rampZCrestEnd) {
+            elUkaloBanner.style.display = 'none';
+          }
+
+          // Downhill (Oralo) Stop Box — exact same 2-second hold & stop-line enforcement
+          const onDownSlope = state.z >= COURSE.rampZCrestEnd && state.z <= COURSE.rampZDownEnd;
+          if (onDownSlope) {
+            if (!state.oraloGoGranted && fz > COURSE.oraloZStopLine + 0.12) {
+              elUkaloBanner.style.display = 'none';
+              triggerInstantFail('Crossed Oralo (Downhill) Stop Line before Examiner GO signal.');
+              return;
+            }
+
+            if (!state.oraloGoGranted && state.z < COURSE.oraloZStopMin && Math.abs(state.speed) < 0.08) {
+              elUkaloBanner.style.display = 'block';
+              elUkaloBanner.classList.remove('go');
+              elUkaloBanner.textContent = 'ORALO: Roll down between Yellow & White lines to stop';
+            }
+
+            if (!state.oraloGoGranted && state.z >= COURSE.oraloZStopMin && fz <= COURSE.oraloZStopLine + 0.12) {
+              if (Math.abs(state.speed) < 0.08) {
+                state.oraloStopped = true;
+                state.oraloHoldTime += dt;
+                const rem = Math.max(0, 2.0 - state.oraloHoldTime);
+                elUkaloBanner.style.display = 'block';
+                elUkaloBanner.classList.remove('go');
+                elUkaloBanner.textContent = `ORALO HOLD: ${rem.toFixed(1)}s (Hold Brake on downhill)`;
+                if (state.oraloHoldTime >= 2.0) {
+                  state.oraloGoGranted = true;
+                  oraloLightMat.emissive.setHex(0x10b981);
+                  playWhistle('go');
+                  elUkaloBanner.classList.add('go');
+                  elUkaloBanner.textContent = 'ORALO GO! Roll down smoothly to Finish Arch';
+                  notify('Oralo (Downhill) cleared! Proceed to Finish Arch.', 'good');
+                }
+              }
+            }
+          }
+
+          if (state.z > COURSE.rampZDownEnd) {
+            elUkaloBanner.style.display = 'none';
+          }
+
+          // Reached Finish Arch
+          if (state.z >= COURSE.finishZ) {
+            state.stations[6].status = 'Cleared';
+            completeTrial();
+          }
+        }
+      }
+
+      // =========================================================================
+      // 8. CAMERA CHOREOGRAPHY (CHASE CAM & RIDER SIGHTLINE CAM)
+      // =========================================================================
+      const _fpEyeLocal = new THREE.Vector3();
+      const _fpLookLocal = new THREE.Vector3();
+      const _fpUpLocal = new THREE.Vector3();
+
+      function updateCamera(dt) {
+        if (state.cameraMode === 'firstperson') {
+          // True Rider-Eye Cockpit POV: positioned at rider's head looking over handlebars, speedo & mirrors
+          scooterRoot.updateMatrixWorld(true);
+          scooterTiltGroup.updateMatrixWorld(true);
+
+          // Toggle visor frame when helmet is worn
+          document.getElementById('visor-overlay').classList.toggle('active', state.helmetDone);
+
+          // Eye sits at rider head (x=0, y=1.42, z=0.22 in scooterTiltGroup local space)
+          _fpEyeLocal.set(0, 1.42, 0.22);
+          scooterTiltGroup.localToWorld(_fpEyeLocal);
+          camera.position.copy(_fpEyeLocal);
+
+          // Look forward over handlebars with natural head-turn into steering
+          const headTurn = state.steer * 0.42;
+          _fpLookLocal.set(-Math.sin(headTurn) * 7.5, 0.72, 0.22 - Math.cos(headTurn) * 7.5);
+          scooterTiltGroup.localToWorld(_fpLookLocal);
+
+          // Tilt camera up-vector partially with scooter roll so horizon leans authentically!
+          const rollTilt = state.roll * 0.55;
+          _fpUpLocal.set(-Math.sin(rollTilt), Math.cos(rollTilt), 0);
+          _fpUpLocal.applyAxisAngle(new THREE.Vector3(0, 1, 0), state.yaw);
+          camera.up.lerp(_fpUpLocal, 1 - Math.exp(-12 * dt));
+
+          camera.lookAt(_fpLookLocal);
+          return;
+        }
+
+        // Reset camera up vector when not in 1st-person
+        camera.up.set(0, 1, 0);
+
+        const backDist = 3.4;
+        const height = 2.05;
+
+        // Standard Chase Cam position behind rider's helmet
+        const desiredX = state.x + Math.sin(state.yaw) * backDist;
+        const desiredZ = state.z + Math.cos(state.yaw) * backDist;
+        const desiredY = state.y + height;
+
+        _camPos.set(desiredX, desiredY, desiredZ);
+        camera.position.lerp(_camPos, 1 - Math.exp(-7.5 * dt));
+
+        // Look target: ahead of scooter, plus dynamic sightline pan in Sightline mode
+        let lookX = state.x - Math.sin(state.yaw) * 4.8;
+        let lookZ = state.z - Math.cos(state.yaw) * 4.8;
+        let lookY = state.y + 1.1;
+
+        if (state.cameraMode === 'sightline') {
+          // Turn head into the steer direction + bias toward next station exit
+          const panYaw = state.yaw + state.steer * 0.55;
+          lookX = state.x - Math.sin(panYaw) * 6.0;
+          lookZ = state.z - Math.cos(panYaw) * 6.0;
+        }
+
+        _camLook.set(lookX, lookY, lookZ);
+        camera.lookAt(_camLook);
+      }
+
+      // =========================================================================
+      // 9. MAIN LOOP (WITH SOFTWARE WEBGL PACING)
+      // =========================================================================
+      const clock = new THREE.Clock();
+      let frameId = 0;
+
+      function afterDraw(cb) {
+        const gl = renderer.getContext();
+        const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        gl.flush();
+        const poll = () => {
+          const status = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
+          if (status === gl.UNSIGNALED) {
+            frameId = window.setTimeout(poll, 5);
+          } else {
+            gl.deleteSync(sync);
+            frameId = window.setTimeout(cb, 80);
+          }
+        };
+        frameId = window.setTimeout(poll, 5);
+      }
+
+      function tick() {
+        const dt = Math.min(clock.getDelta(), 0.05);
+        stepPhysics(dt);
+        updateCamera(dt);
+        renderer.render(scene, camera);
+        if (isSoftwareGl) {
+          afterDraw(tick);
+        } else {
+          frameId = requestAnimationFrame(tick);
+        }
+      }
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Initialize & Start
+      resetTrial();
+      tick();
+    </script>
+  </body>
+</html>
